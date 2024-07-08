@@ -24,6 +24,7 @@ struct Vec3 {
 };
 
 struct Star {//星星所有数据
+    int name;
     Vec3 absolute_pos;
     Vec3 relative_pos;
     double distance;
@@ -32,7 +33,6 @@ struct Star {//星星所有数据
     double temperature;//星云色相存储于此，使用不同于恒星函数将其转换为颜色
     double power;
     int dysondensity;
-    std::string name;
     double radius;
     std::string teamname;
     bool needtoshowpos;
@@ -205,7 +205,7 @@ public:
     bool buttoncal(int x, int y, int w, int h);
     bool buttoncal(bool show);
     bool buttoncal();
-    void drawbutton(SDL_Renderer* renderer);
+    void drawbutton(SDL_Renderer* renderer) const;
 
     bool mouson;
     bool state;
@@ -316,7 +316,7 @@ bool Button::buttoncal() {
     return state;
 }
 
-void Button::drawbutton(SDL_Renderer* renderer) {
+void Button::drawbutton(SDL_Renderer* renderer) const {
     if(toshow==true){
         if (state == true) {
             SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
@@ -364,7 +364,7 @@ private:
     std::vector<Star> stars;
    
     std::vector<opoint> opoints;
-    std::unordered_map<std::string, std::string> star_messages;
+    std::unordered_map<int, std::string> star_messages;
     
     Button menubutton;
     Button coordinate;
@@ -384,8 +384,8 @@ private:
     double theta, phi;
     double r, rtarget;//确定
     
-    std::string targetname;
-    std::string lasttargetname;
+    int targetname;
+    int lasttargetname;
     SDL_Color targetcolor;
     int targetcloud;
     bool totar;
@@ -482,8 +482,8 @@ StarMap::StarMap(int w, int h) : width(w), height(h), running(true), menubutton(
     r = 20;
     rtarget = 20;//确定
     
-    targetname = "";
-    lasttargetname = "";
+    targetname = -1;
+    lasttargetname = -1;
     targetcolor = {0, 0, 0, 255};
     targetcloud = 0;
     totar = false;
@@ -649,25 +649,34 @@ void drawDashedLine(SDL_Renderer* renderer, int x1, int y1, int x2, int y2, doub
 
     double dx = x2 - x1;
     double dy = y2 - y1;
+    double length = sqrt(dx * dx + dy * dy);
 
-
-    float segmentLength = sqrt(dx * dx + dy * dy);
-    int numSegments = segmentLength / dashLength;
-
-    // Calculate delta increments
-    float dxSeg = dx / numSegments;
-    float dySeg = dy / numSegments;
-
-    // Draw each segment
-    for (int i = 0; i < numSegments; ++i) {
-        // Alternate between drawing and skipping
-        if (i % 2 == 0) {
-            SDL_RenderDrawLine(renderer,
-                x1 + dxSeg * i, y1 + dySeg * i,
-                x1 + dxSeg * (i + 1), y1 + dySeg * (i + 1));
-        }
+    // Calculate how many dashes are needed
+    int numDashes = static_cast<int>(length / dashLength);
+    if (numDashes >= 1000) {
+        numDashes = 1000;
     }
+    // Calculate dash components
+    double dash_dx = dx / numDashes;
+    double dash_dy = dy / numDashes;
+
+    // Draw dashes
+    for (int i = 0; i < numDashes; ++i) {
+
+        // Calculate start and end points of each dash
+        int dash_x1 = static_cast<int>(x1 + i * dash_dx);
+        int dash_y1 = static_cast<int>(y1 + i * dash_dy);
+        int dash_x2 = static_cast<int>(x1 + (i + 0.5) * dash_dx);
+        int dash_y2 = static_cast<int>(y1 + (i + 0.5) * dash_dy);
+
+        // Draw dash
+        SDL_RenderDrawLine(renderer, dash_x1, dash_y1, dash_x2, dash_y2);
+    }
+
+    // Make sure the last dash reaches the endpoint of the line
+   // SDL_RenderDrawLine(renderer, static_cast<int>(x1 + numDashes * dash_dx), static_cast<int>(y1 + numDashes * dash_dy), x2, y2);
 }
+
 
 
 void StarMap::init_SDL() {
@@ -727,8 +736,8 @@ bool StarMap::save(int number) {
             std::cerr << "存档炸了" << std::endl;
         }
         for (auto& star : stars) {
-            outFile << star.absolute_pos.x << " " << star.absolute_pos.y << " " << star.absolute_pos.z << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " "
-                << 0 << " " << 0 << " " << star.temperature << " " << star.power << " " << star.dysondensity << " " << star.name << " " << star.radius << " " << star.teamname << " "
+            outFile << star.name << " " << star.absolute_pos.x << " " << star.absolute_pos.y << " " << star.absolute_pos.z << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " "
+                << 0 << " " << 0 << " " << star.temperature << " " << star.power << " " << star.dysondensity << " " << star.radius << " " << star.teamname << " "
                 << star.needtoshowpos << " " << 0 << " " << 0 << " " << 0 << " " << star.type << "\n";
         }
     }
@@ -751,8 +760,8 @@ bool StarMap::save(int number) {
                     std::cerr << "存档炸了" << std::endl;
                 }
                 for (auto& star : stars) {
-                    outFile << star.absolute_pos.x << " " << star.absolute_pos.y << " " << star.absolute_pos.z << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " "
-                        << 0 << " " << 0 << " " << star.temperature << " " << star.power << " " << star.dysondensity << " " << star.name << " " << star.radius << " " << star.teamname << " "
+                    outFile << star.name << " " << star.absolute_pos.x << " " << star.absolute_pos.y << " " << star.absolute_pos.z << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " "
+                        << 0 << " " << 0 << " " << star.temperature << " " << star.power << " " << star.dysondensity << " " << star.radius << " " << star.teamname << " "
                         << star.needtoshowpos << " " << 0 << " " << 0 << " " << 0 << " " << star.type << "\n";
                 }
                 aaaa = 0;
@@ -783,17 +792,17 @@ void StarMap::generate_stars() {//生成，可能无误
         bool aaa=false;
         if (xstar0*xstar0 + ystar0*ystar0 + zstar0*zstar0 < rmap0*rmap0) {
             std::string name = random_name();
-            star_messages[std::to_string(i)] = name + std::to_string(i) + "s introduction\ntestline, 114514中w";
-            if (power_dis(gen) > 0.98) {//测试垂线
+            star_messages[i] = name + std::to_string(i) + "s introduction\ntestline, 114514w";
+            if (power_dis(gen) > 0.9) {//测试垂线
                 aaa = true;
             }
             Star astar = {
+                i,
                 Vec3(xstar0, ystar0, zstar0),
                 Vec3(), 0, 0,{0, 0},
                 temp_dis(gen),
                 std::pow(2.71828, -6.9077 + 23 * power_dis(gen)),
                 type_dis(gen),
-                std::to_string(i),
                 pow(10,radius_dis(gen)) * 0.000016,
                 "fr",
                 aaa,
@@ -805,12 +814,12 @@ void StarMap::generate_stars() {//生成，可能无误
         }
     }
     Star tstar = {
+        114514,
         Vec3(0, 0, -10),
         Vec3(), 0,0, {0, 0},
         7000,
-        std::pow(2.71828, -6.9077 + 23 ),
+        std::pow(2.71828, -6.9077 + 23),
         0,
-        "yuanshen",
         0.01 * 0.000016,
         "fr",
         true,
@@ -839,15 +848,15 @@ void StarMap::generate_nebula() {
         bool aaa = false;
         if (xstar0 * xstar0 + ystar0 * ystar0 + zstar0 * zstar0 < rmap0 * rmap0) {
             std::string name = random_name();
-            star_messages[std::to_string(i)] = name + std::to_string(i) + "s introduction\ntestline, 114514中w";
+            star_messages[i] = name + std::to_string(i) + "s introduction\ntestline, 114514w";
 
             Star nebula = {
+                1919810+i,
                 Vec3(xstar0, ystar0, zstar0),
                 Vec3(), 0, 0,{0, 0},
                 0,
                 0,
                 -1,
-                "anebula",
                 pow(10,radius_dis(gen)),
                 "cl",
                 0,
@@ -921,13 +930,13 @@ void StarMap::read_stars(int number) {
         std::istringstream iss(line);
         Star star;
 
-        iss >> star.absolute_pos.x >> star.absolute_pos.y >> star.absolute_pos.z
+        iss >> star.name
+            >> star.absolute_pos.x >> star.absolute_pos.y >> star.absolute_pos.z
             >> star.relative_pos.x >> star.relative_pos.y >> star.relative_pos.z
             >> star.distance >> star.depth
             >> star.screen_pos.x >> star.screen_pos.y
             >> star.temperature >> star.power
             >> star.dysondensity
-            >> star.name
             >> star.radius
             >> star.teamname
             >> star.needtoshowpos
@@ -1390,9 +1399,10 @@ void StarMap::draw_info_panel() {//报错！！！！！！！！！！！！！
         SDL_RenderCopy(renderer, mesimg[targetcloud], nullptr, &image_rect);
 
         // 信息配置
+        std::string aname = std::to_string(targetname);
         SDL_Color text_color = { 255, 255, 255, 255 };
         TTF_Font* font = TTF_OpenFont("file-deletion.ttf", height / 32.0);
-        SDL_Surface* surface = TTF_RenderText_Blended(font, targetname.c_str(), text_color);//函数未定义
+        SDL_Surface* surface = TTF_RenderText_Blended(font, aname.c_str(), text_color);//函数未定义
         SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
         int text_width = surface->w;//单行字尺寸
         int text_height = surface->h;
@@ -1430,7 +1440,9 @@ void StarMap::cleanup() {
     ifexit = 0;
     ifsave = 0;
     stars.clear();
+    stars.shrink_to_fit();
     star_messages.clear();
+
     cenposcam = Vec3(0, 0, 0);//对应11111
     reposcam = Vec3(0, 0, 0);
     poscam = Vec3(0, 0, 0);
@@ -1451,8 +1463,8 @@ void StarMap::cleanup() {
     r = 20;
     rtarget = 20;//确定
 
-    targetname = "";
-    lasttargetname = "";
+    targetname = -1;
+    lasttargetname = -1;
     targetcolor = { 0, 0, 0, 255 };
     targetcloud = 0;
     totar = false;
