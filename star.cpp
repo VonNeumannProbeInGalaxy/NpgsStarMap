@@ -12,10 +12,12 @@
 #include <algorithm>
 #include <iostream>
 #include <SDL_ttf.h>
+#include <json.hpp>
 namespace fs = std::filesystem;
 //using namespace std;
 const double PI = 3.1415926535;
 
+using json = nlohmann::json;
 
 
 struct Vec3 {
@@ -39,6 +41,7 @@ struct Star {//星星所有数据
     SDL_Point zpoint;
     double zpdep;
     int type;//0恒星，1星云
+
 };
 
 struct Opoint {//其他标记点
@@ -65,8 +68,8 @@ struct Starship {
     double shipdep;
 
 
-    Starship(int number, int category, const Star& origin, const Star& destin, double starttime, double vel)
-        : number(number), category(category), origin(origin), destin(destin), starttime(starttime), vel(vel)
+    Starship(int number, int category, const Star& origin, const Star& destin, double starttime, double vel,double loadmess,double fuelmess,double volatilesmess)
+        : number(number), category(category), origin(origin), destin(destin), starttime(starttime), vel(vel), loadmess(loadmess), fuelmess(fuelmess), volatilesmess(volatilesmess)
     {
     }
 
@@ -204,6 +207,7 @@ void drawRectangle(SDL_Renderer* renderer, int x, int y, int w, int h) {
     SDL_Rect rect = { x, y, w, h };
     SDL_RenderDrawRect(renderer, &rect);
 }
+
 void drawThickRectangleBorder(SDL_Renderer* renderer, int x, int y, int w, int h, int thickness) {
     // Draw outer rectangle
     drawRectangle(renderer, x, y, w, h);
@@ -468,16 +472,12 @@ private:
     void load_textures();
     void generate_stars();
     void generate_nebula();
-    void read_stars(int number);
-    void read_variable(int number);
-    void read_ships(int number);
+    void read(int number);
     void generate_opoints();
     void handle_events();
     void update();
     void render();
-    bool savestars(int number);
-    bool savevariable(int number);
-    bool saveships(int number);
+    bool save(int number);
     void cleanup();
     
 
@@ -592,8 +592,8 @@ void StarMap::menu() {
         if (entry.is_regular_file()) {
             std::string filename = entry.path().filename().string();
 
-            if (filename.size() > 13 && filename.substr(filename.size() - 13) == "star_data.txt") {
-                std::string xValue = filename.substr(0, filename.size() - 13); 
+            if (filename.size() > 14 && filename.substr(filename.size() - 14) == "star_data.json") {
+                std::string xValue = filename.substr(0, filename.size() - 14); 
                 Button abutton;
                 abutton=Button((0.2+0.4*(i%2) )* width, (0.4 +0.2*(i/2))* height, 0.2 * width, 0.1 * height, 0, { 255,127,0,255 }, "StarSave"+xValue);
                 buttonofsaves.push_back(abutton);
@@ -657,8 +657,8 @@ void StarMap::menu() {
                 if (entry.is_regular_file()) {
                     std::string filename = entry.path().filename().string();
 
-                    if (filename.size() > 13 && filename.substr(filename.size() - 13) == "star_data.txt") {
-                        std::string xValue = filename.substr(0, filename.size() - 13);
+                    if (filename.size() > 14 && filename.substr(filename.size() - 14) == "star_data.json") {
+                        std::string xValue = filename.substr(0, filename.size() - 14);
                         Button abutton;
                         abutton = Button((0.2 + 0.4 * (i % 2)) * width, (0.4 + 0.2 * (i / 2)) * height, 0.2 * width, 0.1 * height, 0, { 255,127,0,255 }, "StarSave" + xValue);
                         buttonofsaves.push_back(abutton);
@@ -829,69 +829,97 @@ SDL_Texture* StarMap::load_texture(const std::string& path) {//图像加载，�
     return texture;
 }
 
-bool StarMap::savestars(int number) {
-    std::string filepath = "save/"+std::to_string(number) + "star_data.txt";
+bool StarMap::save(int number) {
+
+    std::string filepath = "save/"+std::to_string(number) + "star_data.json";
     if (number >= 1) {
+        
         std::ofstream outFile(filepath, std::ios::out);
         if (!outFile) {
             std::cerr << "存档炸了" << std::endl;
         }
+        json j;
         for (auto& star : stars) {
-            outFile << std::setprecision(15)<< star.name << " " << star.absolute_pos.x << " " << star.absolute_pos.y << " " << star.absolute_pos.z << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " "
-                << 0 << " " << 0 << " " << star.temperature << " " << star.power << " " << star.dysondensity << " " << star.radius << " " << star.teamname << " "
-                << star.needtoshowpos << " " << 0 << " " << 0 << " " << 0 << " " << star.type << "\n";
-        }
-    }
-    else if (number == 0) {
-        bool aaaa = 1;
-        number = 1;
-        while (aaaa) {
-            filepath = "save/" + std::to_string(number) + "star_data.txt";
-            std::ifstream file(filepath);
+            json star_json;
+            star_json["name"] = star.name;
+            star_json["absolute_pos"]["x"] = star.absolute_pos.x;
+            star_json["absolute_pos"]["y"] = star.absolute_pos.y;
+            star_json["absolute_pos"]["z"] = star.absolute_pos.z;
+            star_json["relative_pos"]["x"] = star.relative_pos.x;
+            star_json["relative_pos"]["y"] = star.relative_pos.y;
+            star_json["relative_pos"]["z"] = star.relative_pos.z;
+            star_json["distance"] = star.distance;
+            star_json["depth"] = star.depth;
+            star_json["screen_pos"]["x"] = star.screen_pos.x;
+            star_json["screen_pos"]["y"] = star.screen_pos.y;
+            star_json["temperature"] = star.temperature;
+            star_json["power"] = star.power;
+            star_json["dysondensity"] = star.dysondensity;
+            star_json["radius"] = star.radius;
+            star_json["teamname"] = star.teamname;
+            star_json["needtoshowpos"] = star.needtoshowpos;
+            star_json["zpoint"]["x"] = star.zpoint.x;
+            star_json["zpoint"]["y"] = star.zpoint.y;
+            star_json["zpdep"] = star.zpdep;
+            star_json["type"] = star.type;
 
-            if (file.is_open()) {
-                file.close();
-                number += 1;
-
-            }
-            else if (!file.is_open()) {
-
-                std::ofstream outFile(filepath, std::ios::out);
-                if (!outFile) {
-                    std::cerr << "存档炸了" << std::endl;
-                }
-                for (auto& star : stars) {
-                    outFile << std::setprecision(15) << star.name << " " << star.absolute_pos.x << " " << star.absolute_pos.y << " " << star.absolute_pos.z << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " "
-                        << 0 << " " << 0 << " " << star.temperature << " " << star.power << " " << star.dysondensity << " " << star.radius << " " << star.teamname << " "
-                        << star.needtoshowpos << " " << 0 << " " << 0 << " " << 0 << " " << star.type << "\n";
-                }
-                aaaa = 0;
-            }
-        }
-    }
-    return 1;
-}
-
-bool StarMap::saveships(int number) {
-    std::string filepath = "save/" + std::to_string(number) + "ship_data.txt";
-    if (number >= 1) {
-        std::ofstream outFile(filepath, std::ios::out);
-        if (!outFile) {
-            std::cerr << "存档炸了" << std::endl;
+            j["stars"].push_back(star_json);
         }
         for (auto& ship : ships) {
-            outFile << std::setprecision(15) << ship.number << " " << ship.category << " " << ship.origin.name << " " <<ship.loadmess << " "<<ship.fuelmess << " " <<ship.volatilesmess << " " << ship.origin.absolute_pos.x << " " << ship.origin.absolute_pos.y << " " << ship.origin.absolute_pos.z << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " "
-                << 0 << " " << 0 << " " << ship.origin.temperature << " " << ship.origin.power << " " << ship.origin.dysondensity << " " << ship.origin.radius << " " << ship.origin.teamname << " "
-                << ship.origin.needtoshowpos << " " << 0 << " " << 0 << " " << 0 << " " << ship.origin.type << " " << ship.destin.name << " " << ship.destin.absolute_pos.x << " " << ship.destin.absolute_pos.y << " " << ship.destin.absolute_pos.z << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " "
-                << 0 << " " << 0 << " " << ship.destin.temperature << " " << ship.destin.power << " " << ship.destin.dysondensity << " " << ship.destin.radius << " " << ship.destin.teamname << " "
-                << ship.destin.needtoshowpos << " " << 0 << " " << 0 << " " << 0 << " " << ship.destin.type << " " << ship.starttime << " " << ship.vel << " " << ship.shippos.x << " " << ship.shippos.y << " " << ship.shippos.z << " " << ship.shippoint.x << " " << ship.shippoint.y << " " << ship.shipdep << "\n";
+            json ship_json;
+
+            ship_json["number"] = ship.number;
+            ship_json["category"] = ship.category;
+            ship_json["loadmess"] = ship.loadmess;
+            ship_json["fuelmess"] = ship.fuelmess;
+            ship_json["volatilesmess"] = ship.volatilesmess;
+
+            // Write origin details
+            ship_json["origin"]["name"] = ship.origin.name;
+            ship_json["origin"]["absolute_pos"]["x"] = ship.origin.absolute_pos.x;
+            ship_json["origin"]["absolute_pos"]["y"] = ship.origin.absolute_pos.y;
+            ship_json["origin"]["absolute_pos"]["z"] = ship.origin.absolute_pos.z;
+            ship_json["origin"]["temperature"] = ship.origin.temperature;
+            ship_json["origin"]["power"] = ship.origin.power;
+            ship_json["origin"]["dysondensity"] = ship.origin.dysondensity;
+            ship_json["origin"]["radius"] = ship.origin.radius;
+            ship_json["origin"]["teamname"] = ship.origin.teamname;
+            ship_json["origin"]["needtoshowpos"] = ship.origin.needtoshowpos;
+            ship_json["origin"]["type"] = ship.origin.type;
+
+            // Write destin details
+            ship_json["destin"]["name"] = ship.destin.name;
+            ship_json["destin"]["absolute_pos"]["x"] = ship.destin.absolute_pos.x;
+            ship_json["destin"]["absolute_pos"]["y"] = ship.destin.absolute_pos.y;
+            ship_json["destin"]["absolute_pos"]["z"] = ship.destin.absolute_pos.z;
+            ship_json["destin"]["temperature"] = ship.destin.temperature;
+            ship_json["destin"]["power"] = ship.destin.power;
+            ship_json["destin"]["dysondensity"] = ship.destin.dysondensity;
+            ship_json["destin"]["radius"] = ship.destin.radius;
+            ship_json["destin"]["teamname"] = ship.destin.teamname;
+            ship_json["destin"]["needtoshowpos"] = ship.destin.needtoshowpos;
+            ship_json["destin"]["type"] = ship.destin.type;
+
+            ship_json["starttime"] = ship.starttime;
+            ship_json["vel"] = ship.vel;
+            ship_json["shippos"]["x"] = ship.shippos.x;
+            ship_json["shippos"]["y"] = ship.shippos.y;
+            ship_json["shippos"]["z"] = ship.shippos.z;
+            ship_json["shippoint"]["x"] = ship.shippoint.x;
+            ship_json["shippoint"]["y"] = ship.shippoint.y;
+            ship_json["shipdep"] = ship.shipdep;
+
+            j["ships"].push_back(ship_json);
         }
+        j["timeingame"] = timeingame;
+        outFile << std::setw(4) << j << std::endl;
     }
     else if (number == 0) {
+ 
         bool aaaa = 1;
         number = 1;
         while (aaaa) {
-            filepath = "save/" + std::to_string(number) + "ship_data.txt";
+            filepath = "save/" + std::to_string(number) + "star_data.json";
             std::ifstream file(filepath);
 
             if (file.is_open()) {
@@ -905,53 +933,88 @@ bool StarMap::saveships(int number) {
                 if (!outFile) {
                     std::cerr << "存档炸了" << std::endl;
                 }
-                for (auto& ship : ships) {
-                    outFile << std::setprecision(15) << ship.number << " " << ship.category << " " << ship.origin.name << " " << ship.loadmess << " " << ship.fuelmess << " " << ship.volatilesmess << " " << ship.origin.absolute_pos.x << " " << ship.origin.absolute_pos.y << " " << ship.origin.absolute_pos.z << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " "
-                        << 0 << " " << 0 << " " << ship.origin.temperature << " " << ship.origin.power << " " << ship.origin.dysondensity << " " << ship.origin.radius << " " << ship.origin.teamname << " "
-                        << ship.origin.needtoshowpos << " " << 0 << " " << 0 << " " << 0 << " " << ship.origin.type << " " << ship.destin.name << " " << ship.destin.absolute_pos.x << " " << ship.destin.absolute_pos.y << " " << ship.destin.absolute_pos.z << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " "
-                        << 0 << " " << 0 << " " << ship.destin.temperature << " " << ship.destin.power << " " << ship.destin.dysondensity << " " << ship.destin.radius << " " << ship.destin.teamname << " "
-                        << ship.destin.needtoshowpos << " " << 0 << " " << 0 << " " << 0 << " " << ship.destin.type << " " << ship.starttime << " " << ship.vel << " " << ship.shippos.x << " " << ship.shippos.y << " " << ship.shippos.z << " " << ship.shippoint.x << " " << ship.shippoint.y << " " << ship.shipdep << "\n";
+
+                json j;
+                for (auto& star : stars) {
+                    json star_json;
+                    star_json["name"] = star.name;
+                    star_json["absolute_pos"]["x"] = star.absolute_pos.x;
+                    star_json["absolute_pos"]["y"] = star.absolute_pos.y;
+                    star_json["absolute_pos"]["z"] = star.absolute_pos.z;
+                    star_json["relative_pos"]["x"] = star.relative_pos.x;
+                    star_json["relative_pos"]["y"] = star.relative_pos.y;
+                    star_json["relative_pos"]["z"] = star.relative_pos.z;
+                    star_json["distance"] = star.distance;
+                    star_json["depth"] = star.depth;
+                    star_json["screen_pos"]["x"] = star.screen_pos.x;
+                    star_json["screen_pos"]["y"] = star.screen_pos.y;
+                    star_json["temperature"] = star.temperature;
+                    star_json["power"] = star.power;
+                    star_json["dysondensity"] = star.dysondensity;
+                    star_json["radius"] = star.radius;
+                    star_json["teamname"] = star.teamname;
+                    star_json["needtoshowpos"] = star.needtoshowpos;
+                    star_json["zpoint"]["x"] = star.zpoint.x;
+                    star_json["zpoint"]["y"] = star.zpoint.y;
+                    star_json["zpdep"] = star.zpdep;
+                    star_json["type"] = star.type;
+
+                    j["stars"].push_back(star_json);
                 }
-                aaaa = 0;
-            }
-        }
-    }
-    return 1;
-}
+                for (auto & ship : ships) {
+                    json ship_json;
 
-bool StarMap::savevariable(int number) {
-    std::string filepath = "save/" + std::to_string(number) + "variable_data.txt";
-    if (number >= 1) {
-        std::ofstream outFile(filepath, std::ios::out);
-        if (!outFile) {
-            std::cerr << "存档炸了" << std::endl;
-        }
+                    ship_json["number"] = ship.number;
+                    ship_json["category"] = ship.category;
+                    ship_json["loadmess"] = ship.loadmess;
+                    ship_json["fuelmess"] = ship.fuelmess;
+                    ship_json["volatilesmess"] = ship.volatilesmess;
 
-        outFile << std::setprecision(15) << timeingame << "\n";
+                    // Write origin details
+                    ship_json["origin"]["name"] = ship.origin.name;
+                    ship_json["origin"]["absolute_pos"]["x"] = ship.origin.absolute_pos.x;
+                    ship_json["origin"]["absolute_pos"]["y"] = ship.origin.absolute_pos.y;
+                    ship_json["origin"]["absolute_pos"]["z"] = ship.origin.absolute_pos.z;
+                    ship_json["origin"]["temperature"] = ship.origin.temperature;
+                    ship_json["origin"]["power"] = ship.origin.power;
+                    ship_json["origin"]["dysondensity"] = ship.origin.dysondensity;
+                    ship_json["origin"]["radius"] = ship.origin.radius;
+                    ship_json["origin"]["teamname"] = ship.origin.teamname;
+                    ship_json["origin"]["needtoshowpos"] = ship.origin.needtoshowpos;
+                    ship_json["origin"]["type"] = ship.origin.type;
 
-    }
-    else if (number == 0) {
-        bool aaaa = 1;
-        number = 1;
-        while (aaaa) {
-            filepath = "save/" + std::to_string(number) + "variable_data.txt";
-            std::ifstream file(filepath);
+                    // Write destin details
+                    ship_json["destin"]["name"] = ship.destin.name;
+                    ship_json["destin"]["absolute_pos"]["x"] = ship.destin.absolute_pos.x;
+                    ship_json["destin"]["absolute_pos"]["y"] = ship.destin.absolute_pos.y;
+                    ship_json["destin"]["absolute_pos"]["z"] = ship.destin.absolute_pos.z;
+                    ship_json["destin"]["temperature"] = ship.destin.temperature;
+                    ship_json["destin"]["power"] = ship.destin.power;
+                    ship_json["destin"]["dysondensity"] = ship.destin.dysondensity;
+                    ship_json["destin"]["radius"] = ship.destin.radius;
+                    ship_json["destin"]["teamname"] = ship.destin.teamname;
+                    ship_json["destin"]["needtoshowpos"] = ship.destin.needtoshowpos;
+                    ship_json["destin"]["type"] = ship.destin.type;
 
-            if (file.is_open()) {
-                file.close();
-                number += 1;
+                    ship_json["starttime"] = ship.starttime;
+                    ship_json["vel"] = ship.vel;
+                    ship_json["shippos"]["x"] = ship.shippos.x;
+                    ship_json["shippos"]["y"] = ship.shippos.y;
+                    ship_json["shippos"]["z"] = ship.shippos.z;
+                    ship_json["shippoint"]["x"] = ship.shippoint.x;
+                    ship_json["shippoint"]["y"] = ship.shippoint.y;
+                    ship_json["shipdep"] = ship.shipdep;
 
-            }
-            else if (!file.is_open()) {
-
-                std::ofstream outFile(filepath, std::ios::out);
-                if (!outFile) {
-                    std::cerr << "存档炸了" << std::endl;
+                    j["ships"].push_back(ship_json);
                 }
-                outFile << std::setprecision(15) << timeingame << "\n";
+                j["timeingame"] = timeingame;
                 aaaa = 0;
+                outFile << std::setw(4) << j << std::endl;
+
             }
+            
         }
+        
     }
     return 1;
 }
@@ -1082,9 +1145,7 @@ void StarMap::run(int number) {//主循环，可能完善
         generate_nebula();
     }
     else {
-        read_stars(number);
-        read_variable(number);
-        read_ships(number);
+        read(number);
     }
 
     Uint32 current_time = SDL_GetTicks();
@@ -1102,117 +1163,98 @@ void StarMap::run(int number) {//主循环，可能完善
         
         render();
         if (ifexit) {
-            ifsave = (savestars(number) && savevariable(number)&& saveships(number));
+            ifsave = save(number);
         }
     }
  
     cleanup();
 }
 
-void StarMap::read_stars(int number) {
-    std::string filepath = "save/"+std::to_string(number) + "star_data.txt";
+void StarMap::read(int number) {
+    std::string filepath = "save/"+std::to_string(number) + "star_data.json";
     std::ifstream file(filepath);
 
     if (!file.is_open()) {
         std::cerr << "Error opening file: " << filepath << std::endl;
     }
+    json j;
+    file >> j;
 
-    std::string line;
-    while (std::getline(file, line)) {
-        std::istringstream iss(line);
+    for (const auto& star_json : j["stars"]) {
         Star star;
 
-        iss >> star.name
-            >> star.absolute_pos.x >> star.absolute_pos.y >> star.absolute_pos.z
-            >> star.relative_pos.x >> star.relative_pos.y >> star.relative_pos.z
-            >> star.distance >> star.depth
-            >> star.screen_pos.x >> star.screen_pos.y
-            >> star.temperature >> star.power
-            >> star.dysondensity
-            >> star.radius
-            >> star.teamname
-            >> star.needtoshowpos
-            >> star.zpoint.x >> star.zpoint.y
-            >> star.zpdep
-            >> star.type;
+        // Read star properties from JSON object
+        star.name = star_json["name"];
+        star.absolute_pos.x = star_json["absolute_pos"]["x"];
+        star.absolute_pos.y = star_json["absolute_pos"]["y"];
+        star.absolute_pos.z = star_json["absolute_pos"]["z"];
+        star.relative_pos.x = star_json["relative_pos"]["x"];
+        star.relative_pos.y = star_json["relative_pos"]["y"];
+        star.relative_pos.z = star_json["relative_pos"]["z"];
+        star.distance = star_json["distance"];
+        star.depth = star_json["depth"];
+        star.screen_pos.x = star_json["screen_pos"]["x"];
+        star.screen_pos.y = star_json["screen_pos"]["y"];
+        star.temperature = star_json["temperature"];
+        star.power = star_json["power"];
+        star.dysondensity = star_json["dysondensity"];
+        star.radius = star_json["radius"];
+        star.teamname = star_json["teamname"];
+        star.needtoshowpos = star_json["needtoshowpos"];
+        star.zpoint.x = star_json["zpoint"]["x"];
+        star.zpoint.y = star_json["zpoint"]["y"];
+        star.zpdep = star_json["zpdep"];
+        star.type = star_json["type"];
 
+        // Add star to vector
         stars.push_back(star);
     }
-
-    file.close();
-}
-
-void StarMap::read_ships(int number) {
-    std::string filepath = "save/" + std::to_string(number) + "ship_data.txt";
-    std::ifstream file(filepath);
-
-    if (!file.is_open()) {
-        std::cerr << "Error opening file: " << filepath << std::endl;
-    }
-
-    std::string line;
-    while (std::getline(file, line)) {
-        std::istringstream iss(line);
+    for (auto& ship_json : j["ships"]) {
         Starship ship;
 
-        iss >> ship.number
-            >> ship.category
-            >>ship.loadmess
-            >>ship.fuelmess
-            >>ship.volatilesmess
-            >> ship.origin.name
-            >> ship.origin.absolute_pos.x >> ship.origin.absolute_pos.y >> ship.origin.absolute_pos.z
-            >> ship.origin.relative_pos.x >> ship.origin.relative_pos.y >> ship.origin.relative_pos.z
-            >> ship.origin.distance >> ship.origin.depth
-            >> ship.origin.screen_pos.x >> ship.origin.screen_pos.y
-            >> ship.origin.temperature >> ship.origin.power
-            >> ship.origin.dysondensity
-            >> ship.origin.radius
-            >> ship.origin.teamname
-            >> ship.origin.needtoshowpos
-            >> ship.origin.zpoint.x >> ship.origin.zpoint.y
-            >> ship.origin.zpdep
-            >> ship.origin.type
-            >> ship.destin.name
-            >> ship.destin.absolute_pos.x >> ship.destin.absolute_pos.y >> ship.destin.absolute_pos.z
-            >> ship.destin.relative_pos.x >> ship.destin.relative_pos.y >> ship.destin.relative_pos.z
-            >> ship.destin.distance >> ship.destin.depth
-            >> ship.destin.screen_pos.x >> ship.destin.screen_pos.y
-            >> ship.destin.temperature >> ship.destin.power
-            >> ship.destin.dysondensity
-            >> ship.destin.radius
-            >> ship.destin.teamname
-            >> ship.destin.needtoshowpos
-            >> ship.destin.zpoint.x >> ship.destin.zpoint.y
-            >> ship.destin.zpdep
-            >> ship.destin.type
-            >> ship.starttime
-            >> ship.vel
-            >> ship.shippos.x >> ship.shippos.y >> ship.shippos.z
-            >> ship.shippoint.x >> ship.shippoint.y
-            >> ship.shipdep;
+        ship.number = ship_json["number"];
+        ship.category = ship_json["category"];
+        ship.loadmess = ship_json["loadmess"];
+        ship.fuelmess = ship_json["fuelmess"];
+        ship.volatilesmess = ship_json["volatilesmess"];
+
+        ship.origin.name = ship_json["origin"]["name"];
+        ship.origin.absolute_pos.x = ship_json["origin"]["absolute_pos"]["x"];
+        ship.origin.absolute_pos.y = ship_json["origin"]["absolute_pos"]["y"];
+        ship.origin.absolute_pos.z = ship_json["origin"]["absolute_pos"]["z"];
+        ship.origin.temperature = ship_json["origin"]["temperature"];
+        ship.origin.power = ship_json["origin"]["power"];
+        ship.origin.dysondensity = ship_json["origin"]["dysondensity"];
+        ship.origin.radius = ship_json["origin"]["radius"];
+        ship.origin.teamname = ship_json["origin"]["teamname"];
+        ship.origin.needtoshowpos = ship_json["origin"]["needtoshowpos"];
+        ship.origin.type = ship_json["origin"]["type"];
+
+
+        ship.destin.name = ship_json["destin"]["name"];
+        ship.destin.absolute_pos.x = ship_json["destin"]["absolute_pos"]["x"];
+        ship.destin.absolute_pos.y = ship_json["destin"]["absolute_pos"]["y"];
+        ship.destin.absolute_pos.z = ship_json["destin"]["absolute_pos"]["z"];
+        ship.destin.temperature = ship_json["destin"]["temperature"];
+        ship.destin.power = ship_json["destin"]["power"];
+        ship.destin.dysondensity = ship_json["destin"]["dysondensity"];
+        ship.destin.radius = ship_json["destin"]["radius"];
+        ship.destin.teamname = ship_json["destin"]["teamname"];
+        ship.destin.needtoshowpos = ship_json["destin"]["needtoshowpos"];
+        ship.destin.type = ship_json["destin"]["type"];
+
+        ship.starttime = ship_json["starttime"];
+        ship.vel = ship_json["vel"];
+        ship.shippos.x = ship_json["shippos"]["x"];
+        ship.shippos.y = ship_json["shippos"]["y"];
+        ship.shippos.z = ship_json["shippos"]["z"];
+        ship.shippoint.x = ship_json["shippoint"]["x"];
+        ship.shippoint.y = ship_json["shippoint"]["y"];
+        ship.shipdep = ship_json["shipdep"];
+
         ships.push_back(ship);
     }
-
-    file.close();
-}
-
-void StarMap::read_variable(int number) {
-    std::string filepath = "save/" + std::to_string(number) + "variable_data.txt";
-    std::ifstream file(filepath);
-
-    if (!file.is_open()) {
-        std::cerr << "Error opening file: " << filepath << std::endl;
-    }
-
-    std::string line;
-    while (std::getline(file, line)) {
-        std::istringstream iss(line);
-       
-
-        iss >> timeingame;
-    }
-
+    timeingame = j["timeingame"];
     file.close();
 }
 
@@ -1643,7 +1685,7 @@ void StarMap::draw_stars() {
             SDL_Color color = ScaleSDLColor(pow(star.power, 1.0 / 8.0) / 8.0 / (variable_threshold001(100 * (star.distance)) / 100), kelvin_to_rgb(star.temperature));
             SDL_Color color0 = kelvin_to_rgb(star.temperature);
             double  starrad = width / sqrt(variable_threshold001(pow((star.distance / star.radius), 2) - 1));
-            double ll = 50 / pow(variable_threshold001(10000 * (star.distance)) / 10000, 0.8) * pow(star.power, 1 / 7.0);
+            double ll = 50 / pow(variable_threshold001(10000 * (star.distance)) / 10000, 0.8) * pow(star.power, 1 / 7.0)*width/ 1920 ;
 
             if (starrad >= 1) {
                 drawFilledCircle(renderer, star.screen_pos.x, star.screen_pos.y, int(starrad), color0); //恒星本体，原色
@@ -1707,7 +1749,7 @@ void StarMap::draw_stars() {
         }
 
         if (star.type == 1 && star.depth > 0) {
-            double ll = std::min((width / sqrt(variable_threshold00(pow((star.distance / star.radius), 2) - 1))), double(2 * width));
+            double ll = std::min((width / sqrt(variable_threshold00(pow((star.distance / star.radius), 2) - 1))), double(2 * width)) *width / 1920;
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_ADD );
             drawFilledCircle(renderer, star.screen_pos.x, star.screen_pos.y, ll, { 200,0,200,50 });
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
@@ -1758,8 +1800,23 @@ void StarMap::draw_ships() {
                     color = {0,255,0,0 };
                 }
                 drawFilledCircle(renderer, ship.shippoint.x, ship.shippoint.y, 2, { color.r,color.g,color.b,150 });
+                double ll = std::min(450 / sqrt(variable_threshold00(pow(vector_length(subtract_vectors(ship.shippos, poscam)), 2) - 1)), 300.0) * width / 1920;
                 SDL_Texture* modified_image = tieimg[3];
-                double ll = std::min(450 / sqrt(variable_threshold00(pow(vector_length(subtract_vectors(ship.shippos,poscam)), 2) - 1)),300.0);
+                if (ll > 1024) {
+                    ll = 1024;
+                }
+                if (ll > 128) {
+                    modified_image = tieimg[0];
+                }
+                else if (ll > 64) {
+                    modified_image = tieimg[1];
+                }
+                else if (ll > 32) {
+                    modified_image = tieimg[2];
+                }
+                else if (ll <= 32) {
+                    modified_image = tieimg[3];
+                }
                 SDL_Rect dest_rect = { int(ship.shippoint.x - ll / 2 + 1), int(ship.shippoint.y - ll / 2 + 1), int(ll), int(ll) };
                 renderTextureWithColor(renderer, modified_image, { color.r,color.g,color.b,255}, dest_rect);
             }

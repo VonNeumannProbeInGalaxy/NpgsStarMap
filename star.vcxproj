@@ -71,7 +71,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\bcy00\Desktop\star\SDL2-2.30.4\include</IncludePath>
+    <IncludePath>C:\Users\bcy00\Desktop\star\SDL2-2.30.4\include;C:\Users\bcy00\Desktop\star\nlohmann</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>C:\Users\bcy00\Desktop\star\SDL2-2.30.4\include</IncludePath>
