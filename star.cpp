@@ -53,14 +53,14 @@ struct Opoint {//其他标记点
     
 };
 
+
 struct Starship {
     int number;
     int category;//0飞船，1rkkv,2laser
+    bool dir;//方向，0正1负
     double loadmess;
     double fuelmess;
     double volatilesmess;
-    Star origin;
-    Star destin;
     double starttime;
     double vel;
     Vec3 shippos;
@@ -68,14 +68,14 @@ struct Starship {
     double shipdep;
 
 
-    Starship(int number, int category, const Star& origin, const Star& destin, double starttime, double vel,double loadmess,double fuelmess,double volatilesmess)
-        : number(number), category(category), origin(origin), destin(destin), starttime(starttime), vel(vel), loadmess(loadmess), fuelmess(fuelmess), volatilesmess(volatilesmess)
-    {
-    }
-
     Starship() = default;
 };
 
+struct Route {//后端/决策器输入时请将恒星编号小者作为起点，定义飞船顺逆方向
+    Star origin;
+    Star destin;
+    std::vector<Starship> ships;
+};
 
 
 static Vec3 add_vectors(const Vec3& v1, const Vec3& v2) {
@@ -407,7 +407,7 @@ private:
     bool ifsave;
 
     std::vector<Star> stars;
-    std::vector<Starship> ships;
+    std::vector<Route> routes;
 
     std::vector<Opoint> opoints;
     std::unordered_map<int, std::string> star_messages;
@@ -865,51 +865,50 @@ bool StarMap::save(int number) {
 
             j["stars"].push_back(star_json);
         }
-        for (auto& ship : ships) {
-            json ship_json;
+        for (auto& route : routes) {
+            json route_json;
 
-            ship_json["number"] = ship.number;
-            ship_json["category"] = ship.category;
-            ship_json["loadmess"] = ship.loadmess;
-            ship_json["fuelmess"] = ship.fuelmess;
-            ship_json["volatilesmess"] = ship.volatilesmess;
+
 
             // Write origin details
-            ship_json["origin"]["name"] = ship.origin.name;
-            ship_json["origin"]["absolute_pos"]["x"] = ship.origin.absolute_pos.x;
-            ship_json["origin"]["absolute_pos"]["y"] = ship.origin.absolute_pos.y;
-            ship_json["origin"]["absolute_pos"]["z"] = ship.origin.absolute_pos.z;
-            ship_json["origin"]["temperature"] = ship.origin.temperature;
-            ship_json["origin"]["power"] = ship.origin.power;
-            ship_json["origin"]["dysondensity"] = ship.origin.dysondensity;
-            ship_json["origin"]["radius"] = ship.origin.radius;
-            ship_json["origin"]["teamname"] = ship.origin.teamname;
-            ship_json["origin"]["needtoshowpos"] = ship.origin.needtoshowpos;
-            ship_json["origin"]["type"] = ship.origin.type;
+            route_json["origin"]["name"] = route.origin.name;
+            route_json["origin"]["absolute_pos"]["x"] = route.origin.absolute_pos.x;
+            route_json["origin"]["absolute_pos"]["y"] = route.origin.absolute_pos.y;
+            route_json["origin"]["absolute_pos"]["z"] = route.origin.absolute_pos.z;
+            route_json["origin"]["temperature"] = route.origin.temperature;
+            route_json["origin"]["power"] = route.origin.power;
+            route_json["origin"]["dysondensity"] = route.origin.dysondensity;
+            route_json["origin"]["radius"] = route.origin.radius;
+            route_json["origin"]["teamname"] = route.origin.teamname;
+            route_json["origin"]["needtoshowpos"] = route.origin.needtoshowpos;
+            route_json["origin"]["type"] = route.origin.type;
 
             // Write destin details
-            ship_json["destin"]["name"] = ship.destin.name;
-            ship_json["destin"]["absolute_pos"]["x"] = ship.destin.absolute_pos.x;
-            ship_json["destin"]["absolute_pos"]["y"] = ship.destin.absolute_pos.y;
-            ship_json["destin"]["absolute_pos"]["z"] = ship.destin.absolute_pos.z;
-            ship_json["destin"]["temperature"] = ship.destin.temperature;
-            ship_json["destin"]["power"] = ship.destin.power;
-            ship_json["destin"]["dysondensity"] = ship.destin.dysondensity;
-            ship_json["destin"]["radius"] = ship.destin.radius;
-            ship_json["destin"]["teamname"] = ship.destin.teamname;
-            ship_json["destin"]["needtoshowpos"] = ship.destin.needtoshowpos;
-            ship_json["destin"]["type"] = ship.destin.type;
+            route_json["destin"]["name"] = route.destin.name;
+            route_json["destin"]["absolute_pos"]["x"] = route.destin.absolute_pos.x;
+            route_json["destin"]["absolute_pos"]["y"] = route.destin.absolute_pos.y;
+            route_json["destin"]["absolute_pos"]["z"] = route.destin.absolute_pos.z;
+            route_json["destin"]["temperature"] = route.destin.temperature;
+            route_json["destin"]["power"] = route.destin.power;
+            route_json["destin"]["dysondensity"] = route.destin.dysondensity;
+            route_json["destin"]["radius"] = route.destin.radius;
+            route_json["destin"]["teamname"] = route.destin.teamname;
+            route_json["destin"]["needtoshowpos"] = route.destin.needtoshowpos;
+            route_json["destin"]["type"] = route.destin.type;
+            for (auto& ship : route.ships) {
+                json ship_json;
+                ship_json["number"] = ship.number;
+                ship_json["category"] = ship.category;
+                ship_json["dir"] = ship.dir;
+                ship_json["loadmess"] = ship.loadmess;
+                ship_json["fuelmess"] = ship.fuelmess;
+                ship_json["volatilesmess"] = ship.volatilesmess;
+                ship_json["starttime"] = ship.starttime;
+                ship_json["vel"] = ship.vel;
+                route_json["ships"].push_back(ship_json);
+            }
 
-            ship_json["starttime"] = ship.starttime;
-            ship_json["vel"] = ship.vel;
-            ship_json["shippos"]["x"] = ship.shippos.x;
-            ship_json["shippos"]["y"] = ship.shippos.y;
-            ship_json["shippos"]["z"] = ship.shippos.z;
-            ship_json["shippoint"]["x"] = ship.shippoint.x;
-            ship_json["shippoint"]["y"] = ship.shippoint.y;
-            ship_json["shipdep"] = ship.shipdep;
-
-            j["ships"].push_back(ship_json);
+            j["routes"].push_back(route_json);
         }
         j["timeingame"] = timeingame;
         outFile << std::setw(4) << j << std::endl;
@@ -961,51 +960,50 @@ bool StarMap::save(int number) {
 
                     j["stars"].push_back(star_json);
                 }
-                for (auto & ship : ships) {
-                    json ship_json;
+                for (auto& route : routes) {
+                    json route_json;
 
-                    ship_json["number"] = ship.number;
-                    ship_json["category"] = ship.category;
-                    ship_json["loadmess"] = ship.loadmess;
-                    ship_json["fuelmess"] = ship.fuelmess;
-                    ship_json["volatilesmess"] = ship.volatilesmess;
+
 
                     // Write origin details
-                    ship_json["origin"]["name"] = ship.origin.name;
-                    ship_json["origin"]["absolute_pos"]["x"] = ship.origin.absolute_pos.x;
-                    ship_json["origin"]["absolute_pos"]["y"] = ship.origin.absolute_pos.y;
-                    ship_json["origin"]["absolute_pos"]["z"] = ship.origin.absolute_pos.z;
-                    ship_json["origin"]["temperature"] = ship.origin.temperature;
-                    ship_json["origin"]["power"] = ship.origin.power;
-                    ship_json["origin"]["dysondensity"] = ship.origin.dysondensity;
-                    ship_json["origin"]["radius"] = ship.origin.radius;
-                    ship_json["origin"]["teamname"] = ship.origin.teamname;
-                    ship_json["origin"]["needtoshowpos"] = ship.origin.needtoshowpos;
-                    ship_json["origin"]["type"] = ship.origin.type;
+                    route_json["origin"]["name"] = route.origin.name;
+                    route_json["origin"]["absolute_pos"]["x"] = route.origin.absolute_pos.x;
+                    route_json["origin"]["absolute_pos"]["y"] = route.origin.absolute_pos.y;
+                    route_json["origin"]["absolute_pos"]["z"] = route.origin.absolute_pos.z;
+                    route_json["origin"]["temperature"] = route.origin.temperature;
+                    route_json["origin"]["power"] = route.origin.power;
+                    route_json["origin"]["dysondensity"] = route.origin.dysondensity;
+                    route_json["origin"]["radius"] = route.origin.radius;
+                    route_json["origin"]["teamname"] = route.origin.teamname;
+                    route_json["origin"]["needtoshowpos"] = route.origin.needtoshowpos;
+                    route_json["origin"]["type"] = route.origin.type;
 
                     // Write destin details
-                    ship_json["destin"]["name"] = ship.destin.name;
-                    ship_json["destin"]["absolute_pos"]["x"] = ship.destin.absolute_pos.x;
-                    ship_json["destin"]["absolute_pos"]["y"] = ship.destin.absolute_pos.y;
-                    ship_json["destin"]["absolute_pos"]["z"] = ship.destin.absolute_pos.z;
-                    ship_json["destin"]["temperature"] = ship.destin.temperature;
-                    ship_json["destin"]["power"] = ship.destin.power;
-                    ship_json["destin"]["dysondensity"] = ship.destin.dysondensity;
-                    ship_json["destin"]["radius"] = ship.destin.radius;
-                    ship_json["destin"]["teamname"] = ship.destin.teamname;
-                    ship_json["destin"]["needtoshowpos"] = ship.destin.needtoshowpos;
-                    ship_json["destin"]["type"] = ship.destin.type;
+                    route_json["destin"]["name"] = route.destin.name;
+                    route_json["destin"]["absolute_pos"]["x"] = route.destin.absolute_pos.x;
+                    route_json["destin"]["absolute_pos"]["y"] = route.destin.absolute_pos.y;
+                    route_json["destin"]["absolute_pos"]["z"] = route.destin.absolute_pos.z;
+                    route_json["destin"]["temperature"] = route.destin.temperature;
+                    route_json["destin"]["power"] = route.destin.power;
+                    route_json["destin"]["dysondensity"] = route.destin.dysondensity;
+                    route_json["destin"]["radius"] = route.destin.radius;
+                    route_json["destin"]["teamname"] = route.destin.teamname;
+                    route_json["destin"]["needtoshowpos"] = route.destin.needtoshowpos;
+                    route_json["destin"]["type"] = route.destin.type;
+                    for (auto& ship : route.ships) {
+                        json ship_json;
+                        ship_json["number"] = ship.number;
+                        ship_json["category"] = ship.category;
+                        ship_json["dir"] = ship.dir;
+                        ship_json["loadmess"] = ship.loadmess;
+                        ship_json["fuelmess"] = ship.fuelmess;
+                        ship_json["volatilesmess"] = ship.volatilesmess;
+                        ship_json["starttime"] = ship.starttime;
+                        ship_json["vel"] = ship.vel;
+                        route_json["ships"].push_back(ship_json);
+                    }
 
-                    ship_json["starttime"] = ship.starttime;
-                    ship_json["vel"] = ship.vel;
-                    ship_json["shippos"]["x"] = ship.shippos.x;
-                    ship_json["shippos"]["y"] = ship.shippos.y;
-                    ship_json["shippos"]["z"] = ship.shippos.z;
-                    ship_json["shippoint"]["x"] = ship.shippoint.x;
-                    ship_json["shippoint"]["y"] = ship.shippoint.y;
-                    ship_json["shipdep"] = ship.shipdep;
-
-                    j["ships"].push_back(ship_json);
+                    j["routes"].push_back(route_json);
                 }
                 j["timeingame"] = timeingame;
                 aaaa = 0;
@@ -1209,50 +1207,54 @@ void StarMap::read(int number) {
         // Add star to vector
         stars.push_back(star);
     }
-    for (auto& ship_json : j["ships"]) {
-        Starship ship;
+    for (auto& route_json : j["routes"]) {
+        Route route;
 
-        ship.number = ship_json["number"];
-        ship.category = ship_json["category"];
-        ship.loadmess = ship_json["loadmess"];
-        ship.fuelmess = ship_json["fuelmess"];
-        ship.volatilesmess = ship_json["volatilesmess"];
-
-        ship.origin.name = ship_json["origin"]["name"];
-        ship.origin.absolute_pos.x = ship_json["origin"]["absolute_pos"]["x"];
-        ship.origin.absolute_pos.y = ship_json["origin"]["absolute_pos"]["y"];
-        ship.origin.absolute_pos.z = ship_json["origin"]["absolute_pos"]["z"];
-        ship.origin.temperature = ship_json["origin"]["temperature"];
-        ship.origin.power = ship_json["origin"]["power"];
-        ship.origin.dysondensity = ship_json["origin"]["dysondensity"];
-        ship.origin.radius = ship_json["origin"]["radius"];
-        ship.origin.teamname = ship_json["origin"]["teamname"];
-        ship.origin.needtoshowpos = ship_json["origin"]["needtoshowpos"];
-        ship.origin.type = ship_json["origin"]["type"];
+        route.origin.name = route_json["origin"]["name"];
+        route.origin.absolute_pos.x = route_json["origin"]["absolute_pos"]["x"];
+        route.origin.absolute_pos.y = route_json["origin"]["absolute_pos"]["y"];
+        route.origin.absolute_pos.z = route_json["origin"]["absolute_pos"]["z"];
+        route.origin.temperature = route_json["origin"]["temperature"];
+        route.origin.power = route_json["origin"]["power"];
+        route.origin.dysondensity = route_json["origin"]["dysondensity"];
+        route.origin.radius = route_json["origin"]["radius"];
+        route.origin.teamname = route_json["origin"]["teamname"];
+        route.origin.needtoshowpos = route_json["origin"]["needtoshowpos"];
+        route.origin.type = route_json["origin"]["type"];
 
 
-        ship.destin.name = ship_json["destin"]["name"];
-        ship.destin.absolute_pos.x = ship_json["destin"]["absolute_pos"]["x"];
-        ship.destin.absolute_pos.y = ship_json["destin"]["absolute_pos"]["y"];
-        ship.destin.absolute_pos.z = ship_json["destin"]["absolute_pos"]["z"];
-        ship.destin.temperature = ship_json["destin"]["temperature"];
-        ship.destin.power = ship_json["destin"]["power"];
-        ship.destin.dysondensity = ship_json["destin"]["dysondensity"];
-        ship.destin.radius = ship_json["destin"]["radius"];
-        ship.destin.teamname = ship_json["destin"]["teamname"];
-        ship.destin.needtoshowpos = ship_json["destin"]["needtoshowpos"];
-        ship.destin.type = ship_json["destin"]["type"];
+        route.destin.name = route_json["destin"]["name"];
+        route.destin.absolute_pos.x = route_json["destin"]["absolute_pos"]["x"];
+        route.destin.absolute_pos.y = route_json["destin"]["absolute_pos"]["y"];
+        route.destin.absolute_pos.z = route_json["destin"]["absolute_pos"]["z"];
+        route.destin.temperature = route_json["destin"]["temperature"];
+        route.destin.power = route_json["destin"]["power"];
+        route.destin.dysondensity = route_json["destin"]["dysondensity"];
+        route.destin.radius = route_json["destin"]["radius"];
+        route.destin.teamname = route_json["destin"]["teamname"];
+        route.destin.needtoshowpos = route_json["destin"]["needtoshowpos"];
+        route.destin.type = route_json["destin"]["type"];
+        for (auto& ship_json : route_json["ships"]) {
+            Starship ship;
+            ship.number = ship_json["number"];
+            ship.category = ship_json["category"];
+            ship.loadmess = ship_json["loadmess"];
+            ship.dir = ship_json["dir"];
+            ship.fuelmess = ship_json["fuelmess"];
+            ship.volatilesmess = ship_json["volatilesmess"];
+            ship.starttime = ship_json["starttime"];
+            ship.vel = ship_json["vel"];
+            ship.shippos.x = ship_json["shippos"]["x"];
+            ship.shippos.y = ship_json["shippos"]["y"];
+            ship.shippos.z = ship_json["shippos"]["z"];
+            ship.shippoint.x = ship_json["shippoint"]["x"];
+            ship.shippoint.y = ship_json["shippoint"]["y"];
+            ship.shipdep = ship_json["shipdep"];
 
-        ship.starttime = ship_json["starttime"];
-        ship.vel = ship_json["vel"];
-        ship.shippos.x = ship_json["shippos"]["x"];
-        ship.shippos.y = ship_json["shippos"]["y"];
-        ship.shippos.z = ship_json["shippos"]["z"];
-        ship.shippoint.x = ship_json["shippoint"]["x"];
-        ship.shippoint.y = ship_json["shippoint"]["y"];
-        ship.shipdep = ship_json["shipdep"];
+            route.ships.push_back(ship);
+        }
 
-        ships.push_back(ship);
+        routes.push_back(route);
     }
     timeingame = j["timeingame"];
     file.close();
@@ -1453,10 +1455,47 @@ void StarMap::update_camera() {
     }
 }
 
-void StarMap::sortsatrsbydistance() {//远近关系，可能无误
-    std::sort(stars.begin(), stars.end(), [](const Star& a, const Star& b) {
-        return a.distance > b.distance;
+void StarMap::sortsatrsbydistance() {
+    // 找到stars中distance的最大值和最小值，确定桶的数量
+    double minDistance = std::numeric_limits<double>::max();
+    double maxDistance = std::numeric_limits<double>::min();
+
+    for (const auto& star : stars) {
+        if (star.distance < minDistance) {
+            minDistance = star.distance;
+        }
+        if (star.distance > maxDistance) {
+            maxDistance = star.distance;
+        }
+    }
+
+    // 桶的数量设为 stars.size()，或者可以根据需求设置合适的桶数量
+    int numBuckets = stars.size()/10;
+
+    // 创建桶
+    std::vector<std::vector<Star>> buckets(numBuckets);
+
+    // 将星星放入对应的桶中
+    for (const auto& star : stars) {
+        // 计算当前星星应该放入的桶的索引
+        int bucketIndex = static_cast<int>((star.distance - minDistance) / (maxDistance - minDistance + 1) * (numBuckets - 1));
+        buckets[bucketIndex].push_back(star);
+    }
+
+    // 对每个桶内部进行排序（这里可以使用 std::sort 或其他排序算法）
+    for (auto& bucket : buckets) {
+        std::sort(bucket.begin(), bucket.end(), [](const Star& a, const Star& b) {
+            return a.distance > b.distance; // 根据距离降序排序
         });
+    }
+
+    // 将排序后的结果放回 stars
+    stars.clear();
+    for (auto& bucket : buckets) {
+        for (auto& star : bucket) {
+            stars.push_back(star);
+        }
+    }
 }
 
 void StarMap::update_stars() {//右键边栏目标确定，双击移动目标确定，可能完善
@@ -1544,30 +1583,34 @@ void StarMap::update_opoints() {
 }
 
 void StarMap::updata_ship() {
-    for (std::vector<Starship>::iterator ship = ships.begin(); ship != ships.end();) {
+    for (std::vector<Route>::iterator route = routes.begin(); route != routes.end();) {
         {
-            Vec3 relative_pos = subtract_vectors(ship->origin.absolute_pos, poscam);
+            Vec3 relative_pos = subtract_vectors(route->origin.absolute_pos, poscam);
             double projx = dot_product(relative_pos, vecx);
             double projy = dot_product(relative_pos, vecy);
             double projz = dot_product(relative_pos, vecz);
             double screenx = width * (0.5 - 0.5 * projx / projz);
             double screeny = height * (0.5 - 0.5 * width / double(height) * projy / projz);
-            ship->origin.screen_pos = { static_cast<int>(screenx), static_cast<int>(screeny) };
-            ship->origin.depth = -projz;
+            route->origin.screen_pos = { static_cast<int>(screenx), static_cast<int>(screeny) };
+            route->origin.depth = -projz;
         }
         {
-            Vec3 relative_pos = subtract_vectors(ship->destin.absolute_pos, poscam);
+            Vec3 relative_pos = subtract_vectors(route->destin.absolute_pos, poscam);
             double projx = dot_product(relative_pos, vecx);
             double projy = dot_product(relative_pos, vecy);
             double projz = dot_product(relative_pos, vecz);
             double screenx = width * (0.5 - 0.5 * projx / projz);
             double screeny = height * (0.5 - 0.5 * width / double(height) * projy / projz);
-            ship->destin.screen_pos = { static_cast<int>(screenx), static_cast<int>(screeny) };
-            ship->destin.depth = -projz;
+            route->destin.screen_pos = { static_cast<int>(screenx), static_cast<int>(screeny) };
+            route->destin.depth = -projz;
         }
-        {
-
-            ship->shippos = add_vectors(ship->origin.absolute_pos, scalar_multiply(ship->vel * (timeingame - ship->starttime)/(365*24*3600), normalize_vector(subtract_vectors(ship->destin.absolute_pos, ship->origin.absolute_pos))));
+        for (std::vector<Starship>::iterator ship = route->ships.begin(); ship != route->ships.end();) {
+            if (ship->dir == 0) {
+                ship->shippos = add_vectors(route->origin.absolute_pos, scalar_multiply(ship->vel * (timeingame - ship->starttime) / (365 * 24 * 3600), normalize_vector(subtract_vectors(route->destin.absolute_pos, route->origin.absolute_pos))));
+            }
+            else {
+                ship->shippos = add_vectors(route->destin.absolute_pos, scalar_multiply(ship->vel * (timeingame - ship->starttime) / (365 * 24 * 3600), normalize_vector(subtract_vectors(route->origin.absolute_pos, route->destin.absolute_pos))));
+            }
             Vec3 relative_pos = subtract_vectors(ship->shippos, poscam);
             double projx = dot_product(relative_pos, vecx);
             double projy = dot_product(relative_pos, vecy);
@@ -1576,18 +1619,27 @@ void StarMap::updata_ship() {
             double screeny = height * (0.5 - 0.5 * width / double(height) * projy / projz);
             ship->shippoint = { static_cast<int>(screenx), static_cast<int>(screeny) };
             ship->shipdep = -projz;
+            if (ship->dir==0 && vector_length(subtract_vectors(route->origin.absolute_pos, ship->shippos)) > vector_length(subtract_vectors(route->origin.absolute_pos, route->destin.absolute_pos))) {
+                ship = route->ships.erase(ship);
+            }
+            else if (ship->dir == 1 && vector_length(subtract_vectors(route->destin.absolute_pos, ship->shippos)) > vector_length(subtract_vectors(route->origin.absolute_pos, route->destin.absolute_pos))) {
+                ship = route->ships.erase(ship);
+            }
+            else {
+                ship++;
+            }
         }
-        if (vector_length(subtract_vectors(ship->origin.absolute_pos, ship->shippos)) > vector_length(subtract_vectors(ship->origin.absolute_pos, ship->destin.absolute_pos))) {
-            ship=ships.erase(ship);
+
+        if (route->ships.size()==0) {
+            route=routes.erase(route);
         }
         else {
-            ship++;
+            std::sort(route->ships.begin(), route->ships.end(), [](const Starship& a, const Starship& b) {
+                return a.shipdep < b.shipdep;
+                });
+            route++;
         }
     }
-    std::sort(ships.begin(), ships.end(), [](const Starship& a, const Starship& b) {
-        return a.category < b.category;
-        });
-
 }
 
 void StarMap::render() {
@@ -1761,65 +1813,89 @@ void StarMap::draw_stars() {
 }
 
 void StarMap::draw_ships() {
-    for (auto& ship : ships) {
-        if (ship.destin.depth > 0 || ship.origin.depth > 0) {
-            if (ship.destin.depth > 0 && ship.origin.depth < 0) {
-                ship.origin.screen_pos.x = ship.destin.screen_pos.x - (ship.origin.screen_pos.x - ship.destin.screen_pos.x) * double(ship.destin.depth - ship.origin.depth) / (ship.destin.depth);
-                ship.origin.screen_pos.y = ship.destin.screen_pos.y - (ship.origin.screen_pos.y - ship.destin.screen_pos.y) * double(ship.destin.depth - ship.origin.depth) / (ship.destin.depth);
+    for (auto& route : routes) {
+        bool frse;
+        bool emse;
+        bool frat;
+        bool emat;
+        if (route.destin.depth > 0 || route.origin.depth > 0) {
+            if (route.destin.depth > 0 && route.origin.depth < 0) {
+                route.origin.screen_pos.x = route.destin.screen_pos.x - (route.origin.screen_pos.x - route.destin.screen_pos.x) * double(route.destin.depth - route.origin.depth) / (route.destin.depth);
+                route.origin.screen_pos.y = route.destin.screen_pos.y - (route.origin.screen_pos.y - route.destin.screen_pos.y) * double(route.destin.depth - route.origin.depth) / (route.destin.depth);
             }
-            if (ship.destin.depth < 0 && ship.origin.depth > 0) {
-                ship.destin.screen_pos.x = ship.origin.screen_pos.x - (ship.destin.screen_pos.x - ship.origin.screen_pos.x) * double(ship.origin.depth - ship.destin.depth) / (ship.origin.depth);
-                ship.destin.screen_pos.y = ship.origin.screen_pos.y - (ship.destin.screen_pos.y - ship.origin.screen_pos.y) * double(ship.origin.depth - ship.destin.depth) / (ship.origin.depth);
+            if (route.destin.depth < 0 && route.origin.depth > 0) {
+                route.destin.screen_pos.x = route.origin.screen_pos.x - (route.destin.screen_pos.x - route.origin.screen_pos.x) * double(route.origin.depth - route.destin.depth) / (route.origin.depth);
+                route.destin.screen_pos.y = route.origin.screen_pos.y - (route.destin.screen_pos.y - route.origin.screen_pos.y) * double(route.origin.depth - route.destin.depth) / (route.origin.depth);
             }
-            if (ship.category == 1 || ship.category == 2) {//攻击
-                if (ship.origin.teamname == "fr") {
-                    SDL_SetRenderDrawColor(renderer, 153,50,204, 130);
+            for (auto& ship : route.ships) {
+                if ((ship.dir == 0 && route.origin.teamname == "fr") || (ship.dir == 1 && route.destin.teamname == "fr")) {
+                    if (ship.category == 0) {
+                        frse = 1;
+                    }
+                    else if (ship.category == 1 || ship.category == 2) {
+                        frat = 1;
+                    }
                 }
-                else if (ship.origin.teamname == "en") {
-                    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 130);
+                if ((ship.dir == 0 && route.origin.teamname == "em") || (ship.dir == 1 && route.destin.teamname == "em")) {
+                    if (ship.category == 0) {
+                        emse = 1;
+                    }
+                    else if (ship.category == 1 || ship.category == 2) {
+                        emat = 1;
+                    }
+                }
+
+                if (ship.shipdep > 0 && ship.shippoint.x>0 && ship.shippoint.x < width && ship.shippoint.y>0 && ship.shippoint.y < height) {
+                    SDL_Color color = { 0,0,0,0 };
+                    if (ship.category == 0) {
+                        color = { 0,100,255,0 };
+                    }
+                    else if (ship.category == 1) {
+                        color = { 200,0,0,0 };
+                    }
+                    else if (ship.category == 2) {
+                        color = { 0,255,0,0 };
+                    }
+                    drawFilledCircle(renderer, ship.shippoint.x, ship.shippoint.y, 2, { color.r,color.g,color.b,150 });
+                    double ll = std::min(450 / sqrt(variable_threshold00(pow(vector_length(subtract_vectors(ship.shippos, poscam)), 2) - 1)), 300.0) * width / 1920;
+                    SDL_Texture* modified_image = tieimg[3];
+                    if (ll > 1024) {
+                        ll = 1024;
+                    }
+                    if (ll > 128) {
+                        modified_image = tieimg[0];
+                    }
+                    else if (ll > 64) {
+                        modified_image = tieimg[1];
+                    }
+                    else if (ll > 32) {
+                        modified_image = tieimg[2];
+                    }
+                    else if (ll <= 32) {
+                        modified_image = tieimg[3];
+                    }
+                    SDL_Rect dest_rect = { int(ship.shippoint.x - ll / 2 + 1), int(ship.shippoint.y - ll / 2 + 1), int(ll), int(ll) };
+                    renderTextureWithColor(renderer, modified_image, { color.r,color.g,color.b,255 }, dest_rect);
                 }
             }
-            else if (ship.category == 0) {//殖民
-                if (ship.origin.teamname == "fr") {
-                    SDL_SetRenderDrawColor(renderer, 60,179,113, 100);
+                if (frse) {
+                    SDL_SetRenderDrawColor(renderer, 60, 179, 113, 100);
                 }
-                else if (ship.origin.teamname == "en") {
+                if (emse) {
                     SDL_SetRenderDrawColor(renderer, 0, 191, 255, 100);
                 }
-            }
-            SDL_RenderDrawLine(renderer, ship.destin.screen_pos.x, ship.destin.screen_pos.y, ship.origin.screen_pos.x, ship.origin.screen_pos.y);
-            if (ship.shipdep > 0) {
-                SDL_Color color = { 0,0,0,0 };
-                if (ship.category == 0){
-                    color = { 0,100,255,0 };
+
+                if (frat) {
+                    SDL_SetRenderDrawColor(renderer, 153, 50, 204, 130);
                 }
-                else if (ship.category == 1) {
-                    color = { 200,0,0,0 };
+                if (emat) {
+                    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 130);
                 }
-                else if (ship.category == 2) {
-                    color = {0,255,0,0 };
+                if((frat||frse)&&(emat||emse)) {
+                    SDL_SetRenderDrawColor(renderer, 255, 215, 0, 130);
                 }
-                drawFilledCircle(renderer, ship.shippoint.x, ship.shippoint.y, 2, { color.r,color.g,color.b,150 });
-                double ll = std::min(450 / sqrt(variable_threshold00(pow(vector_length(subtract_vectors(ship.shippos, poscam)), 2) - 1)), 300.0) * width / 1920;
-                SDL_Texture* modified_image = tieimg[3];
-                if (ll > 1024) {
-                    ll = 1024;
-                }
-                if (ll > 128) {
-                    modified_image = tieimg[0];
-                }
-                else if (ll > 64) {
-                    modified_image = tieimg[1];
-                }
-                else if (ll > 32) {
-                    modified_image = tieimg[2];
-                }
-                else if (ll <= 32) {
-                    modified_image = tieimg[3];
-                }
-                SDL_Rect dest_rect = { int(ship.shippoint.x - ll / 2 + 1), int(ship.shippoint.y - ll / 2 + 1), int(ll), int(ll) };
-                renderTextureWithColor(renderer, modified_image, { color.r,color.g,color.b,255}, dest_rect);
-            }
+            SDL_RenderDrawLine(renderer, route.destin.screen_pos.x, route.destin.screen_pos.y, route.origin.screen_pos.x, route.origin.screen_pos.y);
+            
         }
     }
   
@@ -1932,8 +2008,8 @@ void StarMap::cleanup() {
     ifsave = 0;
     stars.clear();
     stars.shrink_to_fit();
-    ships.clear();
-    ships.shrink_to_fit();
+    routes.clear();
+    routes.shrink_to_fit();
     star_messages.clear();
 
     timeingame = 0;
