@@ -26,7 +26,7 @@ struct Vec3 {
 };
 
 struct Star {//星星所有数据
-    int name;
+    int number;
     Vec3 absolute_pos;
     Vec3 relative_pos;
     double distance;
@@ -57,7 +57,7 @@ struct Opoint {//其他标记点
 struct Starship {
     int number;
     int category;//0飞船，1rkkv,2laser
-    bool dir;//方向，0正1负
+    bool dir;//方向，0正1负,正意味从小编号到大编号
     double loadmess;
     double fuelmess;
     double volatilesmess;
@@ -69,12 +69,24 @@ struct Starship {
 
 
     Starship() = default;
+
+    Starship(int number, int category, bool dir, double v,double loadmess, double fuelmess, double volatilesmess, double starttime)
+        : number(number), category(category), dir(dir), vel(v),loadmess(loadmess), fuelmess(fuelmess), volatilesmess(volatilesmess), starttime(starttime)
+    {
+    }
 };
 
 struct Route {//后端/决策器输入时请将恒星编号小者作为起点，定义飞船顺逆方向
     Star origin;
     Star destin;
     std::vector<Starship> ships;
+
+    Route(const Star& origin, const Star& destin)
+        : origin(origin), destin(destin)
+    {
+    }
+
+    Route() = default;
 };
 
 
@@ -492,6 +504,8 @@ private:
     void update_opoints();
     void updata_ship();
 
+    void add_ship_into_route(int number1, int number2, int numberofship, int cat, bool dir, double v, double m1, double m2, double m3);
+
     void renderTextureWithColor(SDL_Renderer* renderer, SDL_Texture* texture, SDL_Color color, SDL_Rect destRect);
     void draw_stars();
     void draw_ships();
@@ -841,7 +855,7 @@ bool StarMap::save(int number) {
         json j;
         for (auto& star : stars) {
             json star_json;
-            star_json["name"] = star.name;
+            star_json["name"] = star.number;
             star_json["absolute_pos"]["x"] = star.absolute_pos.x;
             star_json["absolute_pos"]["y"] = star.absolute_pos.y;
             star_json["absolute_pos"]["z"] = star.absolute_pos.z;
@@ -871,7 +885,7 @@ bool StarMap::save(int number) {
 
 
             // Write origin details
-            route_json["origin"]["name"] = route.origin.name;
+            route_json["origin"]["name"] = route.origin.number;
             route_json["origin"]["absolute_pos"]["x"] = route.origin.absolute_pos.x;
             route_json["origin"]["absolute_pos"]["y"] = route.origin.absolute_pos.y;
             route_json["origin"]["absolute_pos"]["z"] = route.origin.absolute_pos.z;
@@ -884,7 +898,7 @@ bool StarMap::save(int number) {
             route_json["origin"]["type"] = route.origin.type;
 
             // Write destin details
-            route_json["destin"]["name"] = route.destin.name;
+            route_json["destin"]["name"] = route.destin.number;
             route_json["destin"]["absolute_pos"]["x"] = route.destin.absolute_pos.x;
             route_json["destin"]["absolute_pos"]["y"] = route.destin.absolute_pos.y;
             route_json["destin"]["absolute_pos"]["z"] = route.destin.absolute_pos.z;
@@ -936,7 +950,7 @@ bool StarMap::save(int number) {
                 json j;
                 for (auto& star : stars) {
                     json star_json;
-                    star_json["name"] = star.name;
+                    star_json["name"] = star.number;
                     star_json["absolute_pos"]["x"] = star.absolute_pos.x;
                     star_json["absolute_pos"]["y"] = star.absolute_pos.y;
                     star_json["absolute_pos"]["z"] = star.absolute_pos.z;
@@ -966,7 +980,7 @@ bool StarMap::save(int number) {
 
 
                     // Write origin details
-                    route_json["origin"]["name"] = route.origin.name;
+                    route_json["origin"]["name"] = route.origin.number;
                     route_json["origin"]["absolute_pos"]["x"] = route.origin.absolute_pos.x;
                     route_json["origin"]["absolute_pos"]["y"] = route.origin.absolute_pos.y;
                     route_json["origin"]["absolute_pos"]["z"] = route.origin.absolute_pos.z;
@@ -979,7 +993,7 @@ bool StarMap::save(int number) {
                     route_json["origin"]["type"] = route.origin.type;
 
                     // Write destin details
-                    route_json["destin"]["name"] = route.destin.name;
+                    route_json["destin"]["name"] = route.destin.number;
                     route_json["destin"]["absolute_pos"]["x"] = route.destin.absolute_pos.x;
                     route_json["destin"]["absolute_pos"]["y"] = route.destin.absolute_pos.y;
                     route_json["destin"]["absolute_pos"]["z"] = route.destin.absolute_pos.z;
@@ -1031,13 +1045,17 @@ void StarMap::generate_stars() {//生成，可能无误
     std::uniform_real_distribution<> radius_dis(-3.3, -1);
     std::cout << std::ceil(nstar0 * 6 / PI) << std::endl;
     std::cout << rmap0 << std::endl;
-    for (int i = 0; i < std::ceil(nstar0 * 6 / PI); ++i) {
+    for (int i = 0; i < std::ceil(nstar0 * 6 / PI); i++) {
         double xstar0 = dis(gen);
         double ystar0 = dis(gen);
         double zstar0 = dis(gen);
         bool aaa=false;
         if (xstar0*xstar0 + ystar0*ystar0 + zstar0*zstar0 < rmap0*rmap0) {
             std::string name = random_name();
+            std::string tn="fr";
+            if (i % 2 == 0) {
+                tn = "em";
+            }
             star_messages[i] = name + std::to_string(i) + "s introduction\ntestline, 114514w";
             if (power_dis(gen) > 0.9) {//测试垂线
                 aaa = true;
@@ -1050,7 +1068,7 @@ void StarMap::generate_stars() {//生成，可能无误
                 std::pow(2.71828, -6.9077 + 23 * power_dis(gen)),
                 type_dis(gen),
                 pow(10,radius_dis(gen)) * 0.000016,
-                "fr",
+                tn,
                 aaa,
                 {0, 0},
                 0,
@@ -1058,7 +1076,22 @@ void StarMap::generate_stars() {//生成，可能无误
             };
             stars.push_back(astar);
         }
+        else { 
+            i -= 1;
+        }
     }
+    add_ship_into_route(1, 2, 1, 0, 0, 0.7, 0, 0, 0);
+    add_ship_into_route(1, 2, 1, 1, 0, 0.8, 0, 0, 0);
+    add_ship_into_route(1, 2, 1, 2, 0, 1, 0, 0, 0);
+    add_ship_into_route(1, 2, 1, 0, 1, 0.7, 0, 0, 0);
+    add_ship_into_route(1, 2, 1, 1, 1, 0.8, 0, 0, 0);
+    add_ship_into_route(1, 2, 1, 2, 1, 1, 0, 0, 0);
+    add_ship_into_route(1, 4, 1, 0, 0, 0.7, 0, 0, 0);
+    add_ship_into_route(1, 4, 1, 1, 0, 0.8, 0, 0, 0);
+    add_ship_into_route(1, 4, 1, 2, 0, 1, 0, 0, 0);
+    add_ship_into_route(2, 3, 1, 0, 0, 0.7, 0, 0, 0);
+    add_ship_into_route(2, 3, 1, 1, 0, 0.8, 0, 0, 0);
+    add_ship_into_route(2, 3, 1, 2, 0, 1, 0, 0, 0);
     Star tstar = {
         114514,
         Vec3(0, 0, -10),
@@ -1114,6 +1147,7 @@ void StarMap::generate_nebula() {
         }
     }
 }
+
 void StarMap::generate_opoints() {
     for (double r = 1; r < 100; r *= 1.25892) {
         for (double the = 0; the < 2 * PI; the += 2 * PI / 100.0) {
@@ -1182,7 +1216,7 @@ void StarMap::read(int number) {
         Star star;
 
         // Read star properties from JSON object
-        star.name = star_json["name"];
+        star.number = star_json["name"];
         star.absolute_pos.x = star_json["absolute_pos"]["x"];
         star.absolute_pos.y = star_json["absolute_pos"]["y"];
         star.absolute_pos.z = star_json["absolute_pos"]["z"];
@@ -1210,7 +1244,7 @@ void StarMap::read(int number) {
     for (auto& route_json : j["routes"]) {
         Route route;
 
-        route.origin.name = route_json["origin"]["name"];
+        route.origin.number = route_json["origin"]["name"];
         route.origin.absolute_pos.x = route_json["origin"]["absolute_pos"]["x"];
         route.origin.absolute_pos.y = route_json["origin"]["absolute_pos"]["y"];
         route.origin.absolute_pos.z = route_json["origin"]["absolute_pos"]["z"];
@@ -1223,7 +1257,7 @@ void StarMap::read(int number) {
         route.origin.type = route_json["origin"]["type"];
 
 
-        route.destin.name = route_json["destin"]["name"];
+        route.destin.number = route_json["destin"]["name"];
         route.destin.absolute_pos.x = route_json["destin"]["absolute_pos"]["x"];
         route.destin.absolute_pos.y = route_json["destin"]["absolute_pos"]["y"];
         route.destin.absolute_pos.z = route_json["destin"]["absolute_pos"]["z"];
@@ -1244,12 +1278,7 @@ void StarMap::read(int number) {
             ship.volatilesmess = ship_json["volatilesmess"];
             ship.starttime = ship_json["starttime"];
             ship.vel = ship_json["vel"];
-            ship.shippos.x = ship_json["shippos"]["x"];
-            ship.shippos.y = ship_json["shippos"]["y"];
-            ship.shippos.z = ship_json["shippos"]["z"];
-            ship.shippoint.x = ship_json["shippoint"]["x"];
-            ship.shippoint.y = ship_json["shippoint"]["y"];
-            ship.shipdep = ship_json["shipdep"];
+
 
             route.ships.push_back(ship);
         }
@@ -1455,47 +1484,51 @@ void StarMap::update_camera() {
     }
 }
 
+void StarMap::add_ship_into_route(int number1, int number2, int numberofship, int cat, bool dir, double v, double m1, double m2, double m3) {
+    int sm;
+    int bm;
+    Starship ship = Starship(numberofship, cat, dir,v, m1, m2, m3, timeingame);
+    if (number1 != number2) {
+        if (number1 > number2) {
+            bm = number1;
+            sm = number2;
+        }
+        else
+        {
+            bm = number2;
+            sm = number1;
+        }
+        auto it = std::find_if(routes.begin(), routes.end(),
+            [sm, bm](const Route& d) {
+                return d.origin.number == sm && d.destin.number == bm;
+            });
+
+        if (it != routes.end()) {
+
+            it->ships.push_back(ship);
+        }
+        else
+        {
+            Star ostar =stars[std::distance(stars.begin(), std::find_if(stars.begin(), stars.end(), [sm](const Star& d) {return d.number == sm; }))];
+            Star dstar = stars[std::distance(stars.begin(), std::find_if(stars.begin(), stars.end(), [bm](const Star& d) {return d.number == bm; }))];
+            Route route = Route(ostar, dstar);
+            route.ships.push_back(ship);
+            routes.push_back(route);
+
+        }
+
+
+
+
+
+
+    }
+}
+
 void StarMap::sortsatrsbydistance() {
-    // 找到stars中distance的最大值和最小值，确定桶的数量
-    double minDistance = std::numeric_limits<double>::max();
-    double maxDistance = std::numeric_limits<double>::min();
-
-    for (const auto& star : stars) {
-        if (star.distance < minDistance) {
-            minDistance = star.distance;
-        }
-        if (star.distance > maxDistance) {
-            maxDistance = star.distance;
-        }
-    }
-
-    // 桶的数量设为 stars.size()，或者可以根据需求设置合适的桶数量
-    int numBuckets = stars.size()/10;
-
-    // 创建桶
-    std::vector<std::vector<Star>> buckets(numBuckets);
-
-    // 将星星放入对应的桶中
-    for (const auto& star : stars) {
-        // 计算当前星星应该放入的桶的索引
-        int bucketIndex = static_cast<int>((star.distance - minDistance) / (maxDistance - minDistance + 1) * (numBuckets - 1));
-        buckets[bucketIndex].push_back(star);
-    }
-
-    // 对每个桶内部进行排序（这里可以使用 std::sort 或其他排序算法）
-    for (auto& bucket : buckets) {
-        std::sort(bucket.begin(), bucket.end(), [](const Star& a, const Star& b) {
-            return a.distance > b.distance; // 根据距离降序排序
+    std::sort(stars.begin(), stars.end(), [](const Star& a, const Star& b) {
+        return a.distance > b.distance;
         });
-    }
-
-    // 将排序后的结果放回 stars
-    stars.clear();
-    for (auto& bucket : buckets) {
-        for (auto& star : bucket) {
-            stars.push_back(star);
-        }
-    }
 }
 
 void StarMap::update_stars() {//右键边栏目标确定，双击移动目标确定，可能完善
@@ -1542,7 +1575,7 @@ void StarMap::update_stars() {//右键边栏目标确定，双击移动目标确
             if ((mouseX - screenx) * (mouseX - screenx) + (mouseY - screeny) * (mouseY - screeny) < pow((std::max(ll / 8, starrad)), 2)) {
                 nearstars++;
                 showmessage = true;
-                targetname = star.name;
+                targetname = star.number;
                 targetcolor = kelvin_to_rgb(star.temperature);
                 targetcloud = star.dysondensity;
             }
@@ -1814,10 +1847,10 @@ void StarMap::draw_stars() {
 
 void StarMap::draw_ships() {
     for (auto& route : routes) {
-        bool frse;
-        bool emse;
-        bool frat;
-        bool emat;
+        bool frse=0;
+        bool emse=0;
+        bool frat=0;
+        bool emat=0;
         if (route.destin.depth > 0 || route.origin.depth > 0) {
             if (route.destin.depth > 0 && route.origin.depth < 0) {
                 route.origin.screen_pos.x = route.destin.screen_pos.x - (route.origin.screen_pos.x - route.destin.screen_pos.x) * double(route.destin.depth - route.origin.depth) / (route.destin.depth);
@@ -1879,17 +1912,17 @@ void StarMap::draw_ships() {
                 }
             }
                 if (frse) {
-                    SDL_SetRenderDrawColor(renderer, 60, 179, 113, 100);
+                    SDL_SetRenderDrawColor(renderer, 60, 179, 113, 100);//绿
                 }
                 if (emse) {
-                    SDL_SetRenderDrawColor(renderer, 0, 191, 255, 100);
+                    SDL_SetRenderDrawColor(renderer, 0, 191, 255, 100);//青
                 }
 
                 if (frat) {
-                    SDL_SetRenderDrawColor(renderer, 153, 50, 204, 130);
+                    SDL_SetRenderDrawColor(renderer, 153, 50, 204, 130);//紫
                 }
                 if (emat) {
-                    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 130);
+                    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 130);//红
                 }
                 if((frat||frse)&&(emat||emse)) {
                     SDL_SetRenderDrawColor(renderer, 255, 215, 0, 130);
