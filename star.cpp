@@ -380,9 +380,9 @@ void Button::drawbutton(SDL_Renderer* renderer) const {
             }
         }
         else if (state == false) {
-            SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 200);
             if (mouson == true) {
-                SDL_SetRenderDrawColor(renderer, 200, 0, 0, 255);
+                SDL_SetRenderDrawColor(renderer, 200, 200,200, 150);
             }
         }
         SDL_RenderDrawRect(renderer, &button_rect);
@@ -1707,9 +1707,14 @@ void StarMap::render() {
         SDL_RenderFillRect(renderer, &backgroundrect);
         showcircle = coordinate.buttoncal(0.2 * width, 0.3 * height + menuscolly, 0.2 * width, 0.07 * height, 1);
         ifexit = exitbutton.buttoncal(0.6 * width, 0.3 * height + menuscolly, 0.2 * width, 0.07 * height, 1);
-        addtimerate.buttoncal(0.2 * width, 0.3 * height + menuscolly, 0.1 * width, 0.07 * height, 0);
-        subtimerate.buttoncal(0.3 * width, 0.3 * height + menuscolly, 0.1 * width, 0.07 * height, 0);
         ShipAndRKKV.buttoncal(0.2 * width, 0.5 * height + menuscolly, 0.2 * width, 0.07 * height, 1);
+
+
+        addtimerate.buttoncal(0.2 * width, 0.3 * height, 0.1 * width, 0.07 * height, 0);
+        stop.buttoncal(0.85 * width, 0, 0.1 * width, 0.07 * height, 0);
+        subtimerate.buttoncal(0.3 * width, 0.3 * height, 0.1 * width, 0.07 * height, 0);
+
+
         showvertical = showcircle;
 
     }
