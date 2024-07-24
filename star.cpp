@@ -215,12 +215,12 @@ static std::string random_name() {
     return tmp_s;
 }
 
-void drawRectangle(SDL_Renderer* renderer, int x, int y, int w, int h) {
+static void drawRectangle(SDL_Renderer* renderer, int x, int y, int w, int h) {
     SDL_Rect rect = { x, y, w, h };
     SDL_RenderDrawRect(renderer, &rect);
 }
 
-void drawThickRectangleBorder(SDL_Renderer* renderer, int x, int y, int w, int h, int thickness) {
+static void drawThickRectangleBorder(SDL_Renderer* renderer, int x, int y, int w, int h, int thickness) {
     // Draw outer rectangle
     drawRectangle(renderer, x, y, w, h);
 
@@ -228,6 +228,16 @@ void drawThickRectangleBorder(SDL_Renderer* renderer, int x, int y, int w, int h
     for (int i = 1; i < thickness; ++i) {
         drawRectangle(renderer, x + i, y + i, w - 2 * i, h - 2 * i);
     }
+}
+
+std::vector<std::string> split_string(const std::string& s, char delimiter) {
+    std::vector<std::string> result;
+    std::stringstream ss(s);
+    std::string token;
+    while (std::getline(ss, token, delimiter)) {
+        result.push_back(token);
+    }
+    return result;
 }
 //————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 class Button {//Button abutton(0, 0, 100, 100, true, { 100,100,100 }, "aa");
@@ -392,13 +402,89 @@ void Button::drawbutton(SDL_Renderer* renderer) const {
         TTF_Font* font = TTF_OpenFont("TCM.TTF", 100);
         SDL_Surface* surface = TTF_RenderText_Blended(font, text.c_str(), { 255,255,255 });
         SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-        int text_width = surface->w;
-        int text_height = surface->h;
         SDL_FreeSurface(surface);
         TTF_CloseFont(font);
         SDL_RenderCopy(renderer, texture, nullptr, &text_rect);
         SDL_DestroyTexture(texture);
     }
+}
+//————————————————————————————————————————————————————————————————————————————————————————————————————
+class Hovermessage {
+public:
+    SDL_Rect back_rect;
+    SDL_Rect text_rect;
+    std::string text;
+    void cal(std::string str,int size,int w,int h);
+    void draw(SDL_Renderer* renderer,int size);
+
+    Hovermessage(){
+        back_rect = { 0,0,0,0 };
+        text = "";
+    }
+};
+
+void Hovermessage::cal(std::string str,int size,int w,int h) {
+    text = str;
+    int x, y;
+    int mx, my;
+    SDL_GetMouseState(&mx, &my);
+    TTF_Font* font = TTF_OpenFont("cnttf.ttf",size );
+    std::istringstream iss(str);
+    std::string line;
+    int maxWidth = 0;
+    int totalHeight = 0;
+    int lineNumber = 0;
+
+    // 计算每行的宽度和总高度
+    while (std::getline(iss, line)) {
+        int lineW, lineH;
+        TTF_SizeText(font, line.c_str(), &lineW, &lineH);
+        if (lineW > maxWidth) {
+            maxWidth = lineW;
+        }
+        totalHeight += lineH;
+        lineNumber++;
+    }
+    totalHeight = totalHeight;
+
+    TTF_CloseFont(font);
+
+    if (((mx + maxWidth) <= w) && ((my - totalHeight) >= 0)) {
+        back_rect = { mx ,my - totalHeight-4 ,maxWidth + 4,totalHeight + 4 };
+    }
+    else {
+        back_rect = { mx - maxWidth-4,my,maxWidth+4,totalHeight+4 };
+    }
+    
+}
+
+void Hovermessage::draw(SDL_Renderer* renderer,int size) {
+    if (text != "") {
+        TTF_Font* font = TTF_OpenFont("cnttf.ttf", size);
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_MUL);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150);
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+        SDL_RenderFillRect(renderer, &back_rect);
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        drawThickRectangleBorder(renderer, back_rect.x, back_rect.y, back_rect.w, back_rect.h, 0.005 * back_rect.w);
+        std::vector<std::string> info_lines = split_string(text, '\n');
+        int y_offset = back_rect.y+2;
+        for (const auto& line : info_lines) {
+
+            SDL_Surface* surface = TTF_RenderUTF8_Blended(font, line.c_str(), {255,255,255,255});
+            SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+            int text_width = surface->w;
+            int text_height = surface->h;
+            SDL_FreeSurface(surface);
+
+            SDL_Rect atext_rect = { back_rect.x+2, y_offset, text_width, text_height };
+            SDL_RenderCopy(renderer, texture, nullptr, &atext_rect);
+            SDL_DestroyTexture(texture);
+            y_offset += text_height;
+        }
+        TTF_CloseFont(font);
+    }
+    text = "";
 }
 //————————————————————————————————————————————————————————————————————————————————————————————————————
 class StarMap {//屏幕各项数据，声明与初始化可能有遗漏
@@ -431,6 +517,8 @@ private:
     Button subtimerate;
     Button stop;
     Button ShipAndRKKV;
+
+    Hovermessage hovermessage;
 
     Vec3 cenposcam;//对应11111
     Vec3 reposcam;
@@ -512,7 +600,7 @@ private:
     void draw_opoints();
     void draw_info_panel();
     void draw_time(double atime);
-    std::vector<std::string> split_string(const std::string& s, char delimiter);
+
     
     SDL_Texture* load_texture(const std::string& path);
 };
@@ -524,7 +612,7 @@ StarMap::StarMap(int w, int h) : width(w), height(h), running(true) {//屏幕初
     load_textures();
     generate_opoints();
 
-
+    hovermessage = Hovermessage();
     menubutton = Button(0, 0, 100, 100, 1, { 100,100,100 ,255 }, "menu");
     coordinate = Button(0, 0, 100, 100, 0, { 100,100,100 ,255 }, "coordinate");
     exitbutton = Button(0, 0, 100, 100, 0, { 100,100,100 ,255 }, "exit&save");
@@ -631,7 +719,7 @@ void StarMap::menu() {
                 running = false;
             }
             else if (event.type == SDL_WINDOWEVENT) {
-                if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
+                if (event.window.event == SDL_WINDOWEVENT_RESIZED) {//更新按钮位置
                     width = event.window.data1;
                     height = event.window.data2;
                     SDL_RenderSetLogicalSize(renderer, width, height);
@@ -640,7 +728,7 @@ void StarMap::menu() {
                     returntostart.buttoncal(0, 0, 0.1 * width, 0.1 * height);
                 }
             }
-            else if (event.type == SDL_MOUSEWHEEL&&startold.state==1) {
+            else if (event.type == SDL_MOUSEWHEEL&&startold.state==1) {//存档列滚动
                 if (event.wheel.y > 0) {
                     if (startscroll_y < 0){
                         startscroll_y += static_cast<int>(height / 32.0);
@@ -661,7 +749,7 @@ void StarMap::menu() {
         SDL_RenderCopy(renderer, menuback, nullptr, &menu_rect);
 
 
-        if (startnew.buttoncal()) {
+        if (startnew.buttoncal()) {//新档
             run(0);
             startnew.state = 0;
             buttonofsaves.clear();
@@ -682,7 +770,7 @@ void StarMap::menu() {
                 }
             }
         }
-        startold.buttoncal();
+        startold.buttoncal();//旧档
         if (startold.state==1) {
             startnew.buttoncal(0);
             startold.buttoncal(0);
@@ -714,7 +802,10 @@ void StarMap::menu() {
         returntostart.drawbutton(renderer);
         startnew.drawbutton(renderer);
         startold.drawbutton(renderer);
-
+        if (startnew.mouson) {
+            hovermessage.cal(u8"aa启动\nsdhusdhuudh\nsh\naaaaaaaaaaaaaaaaaaaaaaaaaaa", height / 32.0, width, height);
+        }
+        hovermessage.draw(renderer, height / 32.0);
         SDL_RenderPresent(renderer);
     }
 
@@ -859,22 +950,12 @@ bool StarMap::save(int number) {
             star_json["absolute_pos"]["x"] = star.absolute_pos.x;
             star_json["absolute_pos"]["y"] = star.absolute_pos.y;
             star_json["absolute_pos"]["z"] = star.absolute_pos.z;
-            star_json["relative_pos"]["x"] = star.relative_pos.x;
-            star_json["relative_pos"]["y"] = star.relative_pos.y;
-            star_json["relative_pos"]["z"] = star.relative_pos.z;
-            star_json["distance"] = star.distance;
-            star_json["depth"] = star.depth;
-            star_json["screen_pos"]["x"] = star.screen_pos.x;
-            star_json["screen_pos"]["y"] = star.screen_pos.y;
             star_json["temperature"] = star.temperature;
             star_json["power"] = star.power;
             star_json["dysondensity"] = star.dysondensity;
             star_json["radius"] = star.radius;
             star_json["teamname"] = star.teamname;
             star_json["needtoshowpos"] = star.needtoshowpos;
-            star_json["zpoint"]["x"] = star.zpoint.x;
-            star_json["zpoint"]["y"] = star.zpoint.y;
-            star_json["zpdep"] = star.zpdep;
             star_json["type"] = star.type;
 
             j["stars"].push_back(star_json);
@@ -954,22 +1035,12 @@ bool StarMap::save(int number) {
                     star_json["absolute_pos"]["x"] = star.absolute_pos.x;
                     star_json["absolute_pos"]["y"] = star.absolute_pos.y;
                     star_json["absolute_pos"]["z"] = star.absolute_pos.z;
-                    star_json["relative_pos"]["x"] = star.relative_pos.x;
-                    star_json["relative_pos"]["y"] = star.relative_pos.y;
-                    star_json["relative_pos"]["z"] = star.relative_pos.z;
-                    star_json["distance"] = star.distance;
-                    star_json["depth"] = star.depth;
-                    star_json["screen_pos"]["x"] = star.screen_pos.x;
-                    star_json["screen_pos"]["y"] = star.screen_pos.y;
                     star_json["temperature"] = star.temperature;
                     star_json["power"] = star.power;
                     star_json["dysondensity"] = star.dysondensity;
                     star_json["radius"] = star.radius;
                     star_json["teamname"] = star.teamname;
                     star_json["needtoshowpos"] = star.needtoshowpos;
-                    star_json["zpoint"]["x"] = star.zpoint.x;
-                    star_json["zpoint"]["y"] = star.zpoint.y;
-                    star_json["zpdep"] = star.zpdep;
                     star_json["type"] = star.type;
 
                     j["stars"].push_back(star_json);
@@ -1056,7 +1127,7 @@ void StarMap::generate_stars() {//生成，可能无误
             if (i % 2 == 0) {
                 tn = "em";
             }
-            star_messages[i] = name + std::to_string(i) + "s introduction\ntestline, 114514w";
+            star_messages[i] = name + std::to_string(i) + u8"s introduction\ntestline, 114514中w";
             if (power_dis(gen) > 0.9) {//测试垂线
                 aaa = true;
             }
@@ -1220,22 +1291,12 @@ void StarMap::read(int number) {
         star.absolute_pos.x = star_json["absolute_pos"]["x"];
         star.absolute_pos.y = star_json["absolute_pos"]["y"];
         star.absolute_pos.z = star_json["absolute_pos"]["z"];
-        star.relative_pos.x = star_json["relative_pos"]["x"];
-        star.relative_pos.y = star_json["relative_pos"]["y"];
-        star.relative_pos.z = star_json["relative_pos"]["z"];
-        star.distance = star_json["distance"];
-        star.depth = star_json["depth"];
-        star.screen_pos.x = star_json["screen_pos"]["x"];
-        star.screen_pos.y = star_json["screen_pos"]["y"];
         star.temperature = star_json["temperature"];
         star.power = star_json["power"];
         star.dysondensity = star_json["dysondensity"];
         star.radius = star_json["radius"];
         star.teamname = star_json["teamname"];
         star.needtoshowpos = star_json["needtoshowpos"];
-        star.zpoint.x = star_json["zpoint"]["x"];
-        star.zpoint.y = star_json["zpoint"]["y"];
-        star.zpdep = star_json["zpdep"];
         star.type = star_json["type"];
 
         // Add star to vector
@@ -1509,7 +1570,7 @@ void StarMap::add_ship_into_route(int number1, int number2, int numberofship, in
         }
         else
         {
-            Star ostar =stars[std::distance(stars.begin(), std::find_if(stars.begin(), stars.end(), [sm](const Star& d) {return d.number == sm; }))];
+            Star ostar =stars[std::distance(stars.begin(), std::find_if(stars.begin(), stars.end(), [sm](const Star& d) {return d.number == sm; }))];//加处理不存在恒星
             Star dstar = stars[std::distance(stars.begin(), std::find_if(stars.begin(), stars.end(), [bm](const Star& d) {return d.number == bm; }))];
             Route route = Route(ostar, dstar);
             route.ships.push_back(ship);
@@ -1525,10 +1586,31 @@ void StarMap::add_ship_into_route(int number1, int number2, int numberofship, in
     }
 }
 
-void StarMap::sortsatrsbydistance() {
-    std::sort(stars.begin(), stars.end(), [](const Star& a, const Star& b) {
+void StarMap::sortsatrsbydistance() {//待优化
+    // 分离距离小于10的星星和其他星星
+    std::vector<Star> starsLessThan10;
+    std::vector<Star> starsGreaterThanEqual10;
+
+    for (const Star& star : stars) {
+        if (star.distance < 10&& star.screen_pos.x >= 0 && star.screen_pos.x < width &&
+            star.screen_pos.y >= 0 && star.screen_pos.y < height && star.depth>0) {
+            starsLessThan10.push_back(star);
+        }
+        else {
+            starsGreaterThanEqual10.push_back(star);
+        }
+    }
+
+    // 对距离小于10的星星按距离排序
+    std::sort(starsLessThan10.begin(), starsLessThan10.end(), [](const Star& a, const Star& b) {
         return a.distance > b.distance;
         });
+
+    // 将排序后的星星放回原始向量，先放大于等于10的，再放小于10的
+    stars.clear();
+    stars.reserve(starsGreaterThanEqual10.size() + starsLessThan10.size());
+    stars.insert(stars.end(), starsGreaterThanEqual10.begin(), starsGreaterThanEqual10.end());
+    stars.insert(stars.end(), starsLessThan10.begin(), starsLessThan10.end());
 }
 
 void StarMap::update_stars() {//右键边栏目标确定，双击移动目标确定，可能完善
@@ -1589,7 +1671,10 @@ void StarMap::update_stars() {//右键边栏目标确定，双击移动目标确
                 target = star.absolute_pos;
             }
         }
-
+        if ((mouseX - screenx) * (mouseX - screenx) + (mouseY - screeny) * (mouseY - screeny) < pow((std::max(ll / 8, starrad)), 2) && star.type == 0) {
+            std::string str = u8"恒星" + std::to_string( star.number) +"\n"+ u8"半径:"+ std::to_string(star.radius/0.000016) +u8"天文单位" + "\n"+ u8"功率:" + std::to_string(star.power) + u8"倍太阳";
+            hovermessage.cal(str, height / 70.0, width, height);
+        }
 
 
     }
@@ -1755,6 +1840,7 @@ void StarMap::render() {
     stop.drawbutton(renderer);
     lastopen = open;
     draw_info_panel();
+    hovermessage.draw(renderer, height / 70.0);
     SDL_RenderPresent(renderer);
 }
 
@@ -1769,7 +1855,6 @@ void  StarMap::renderTextureWithColor(SDL_Renderer* renderer, SDL_Texture* textu
 
 void StarMap::draw_stars() {
     for (auto& star : stars) {
-        
         if (star.screen_pos.x >= 0 && star.screen_pos.x < width &&
             star.screen_pos.y >= 0 && star.screen_pos.y < height && star.depth>0&&star.type==0) {
             SDL_Color color = ScaleSDLColor(pow(star.power, 1.0 / 8.0) / 8.0 / (variable_threshold001(100 * (star.distance)) / 100), kelvin_to_rgb(star.temperature));
@@ -1781,7 +1866,9 @@ void StarMap::draw_stars() {
                 drawFilledCircle(renderer, star.screen_pos.x, star.screen_pos.y, int(starrad), color0); //恒星本体，原色
             }
             else {
-                drawFilledCircle(renderer, star.screen_pos.x, star.screen_pos.y, 1, ScaleSDLColor(variable_threshold1(ll), color0));//处理过远不显示的情况
+                SDL_Color acolor = ScaleSDLColor(variable_threshold1(ll), color0);
+                SDL_SetRenderDrawColor(renderer, acolor.r, acolor.g, acolor.b, acolor.a);
+                SDL_RenderDrawPoint(renderer, star.screen_pos.x, star.screen_pos.y);//处理过远不显示的情况
             }
             SDL_Color AA = { 0, 0, 0, 255 };
 
@@ -1955,16 +2042,6 @@ void StarMap::draw_opoints() {
     }
 }
 
-std::vector<std::string> StarMap::split_string(const std::string& s, char delimiter) {
-    std::vector<std::string> result;
-    std::stringstream ss(s);
-    std::string token;
-    while (std::getline(ss, token, delimiter)) {
-        result.push_back(token);
-    }
-    return result;
-}
-
 void StarMap::draw_info_panel() {//报错！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
     
     if ( messagex<=width) {
@@ -1988,7 +2065,7 @@ void StarMap::draw_info_panel() {//报错！！！！！！！！！！！！！
         // 信息配置
         std::string aname = std::to_string(targetname);
         SDL_Color text_color = { 255, 255, 255, 255 };
-        TTF_Font* font = TTF_OpenFont("file-deletion.ttf", height / 32.0);
+        TTF_Font* font = TTF_OpenFont("cnttf.ttf", height / 32.0);
         SDL_Surface* surface = TTF_RenderText_Blended(font, aname.c_str(), text_color);//函数未定义
         SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
         int text_width = surface->w;//单行字尺寸
