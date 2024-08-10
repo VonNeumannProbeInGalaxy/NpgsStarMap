@@ -15,10 +15,9 @@
 #include <json.hpp>
 namespace fs = std::filesystem;
 //using namespace std;
-const double PI = 3.1415926535;
+const double PI = 3.141592653589793238;
 
 using json = nlohmann::json;
-
 
 struct Vec3 {
     double x, y, z;
@@ -62,16 +61,17 @@ struct Starship {
     double fuelmess;
     double volatilesmess;
     double starttime;
-    double vel;
+    double endtime;
     Vec3 shippos;
     SDL_Point shippoint;
     double shipdep;
+    double v;
 
 
     Starship() = default;
 
-    Starship(int number, int category, bool dir, double v,double loadmess, double fuelmess, double volatilesmess, double starttime)
-        : number(number), category(category), dir(dir), vel(v),loadmess(loadmess), fuelmess(fuelmess), volatilesmess(volatilesmess), starttime(starttime)
+    Starship(int number, int category, bool dir, double endtime,double loadmess, double fuelmess, double volatilesmess, double starttime,double v)
+        : number(number), category(category), dir(dir), endtime(endtime),loadmess(loadmess), fuelmess(fuelmess), volatilesmess(volatilesmess), starttime(starttime),v(v)
     {
     }
 };
@@ -80,6 +80,9 @@ struct Route {//后端/决策器输入时请将恒星编号小者作为起点，
     Star origin;
     Star destin;
     std::vector<Starship> ships;
+    bool show;
+    bool p;
+    bool lp;
 
     Route(const Star& origin, const Star& destin)
         : origin(origin), destin(destin)
@@ -230,6 +233,40 @@ static void drawThickRectangleBorder(SDL_Renderer* renderer, int x, int y, int w
     }
 }
 
+static bool isMouseNearLine(SDL_Point p1, SDL_Point p2) {
+    int mx, my;
+    SDL_GetMouseState(&mx, &my);
+    int x1 = p1.x;
+    int y1 = p1.y;
+    int x2 = p2.x;
+    int y2 = p2.y;
+
+    // 计算线段的长度
+    float length = std::sqrt(std::pow(x2 - x1, 2) + std::pow(y2 - y1, 2));
+
+    // 计算单位向量
+    float unitX = (x2 - x1) / length;
+    float unitY = (y2 - y1) / length;
+
+    // 计算垂直于线段的单位向量
+    float perpX = -unitY;
+    float perpY = unitX;
+
+    // 计算点到直线的距离
+    float dist = std::abs((mx - x1) * perpX + (my - y1) * perpY);
+
+    // 如果距离小于等于 5 像素，并且点在线段的范围内，则返回 true
+    if (dist <= 5.0f) {
+        // 确定点在线段的范围内
+        float dotProduct = (mx - x1) * unitX + (my - y1) * unitY;
+        if (dotProduct >= 0 && dotProduct <= length) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 std::vector<std::string> split_string(const std::string& s, char delimiter) {
     std::vector<std::string> result;
     std::stringstream ss(s);
@@ -253,14 +290,29 @@ public:
         press = 0;
         state = 0;
         mouson = 0;
+        path_to_text = "TCM.TTF";
     }
-    Button(int x, int y, int w, int h, bool show, SDL_Color bcolor, std::string btext){
+    Button(int x, int y, int w, int h, bool show, SDL_Color bcolor, std::string btext, std::string path){
         text_rect = { int(x + 0.1 * w),int(y + 0.1 * h),int(0.8 * w),int(0.8 * h) };
         back_rect = { int(x + 0.05 * w),int(y + 0.05 * h),int(0.9 * w),int(0.9 * h) };
         button_rect = { x,y,w,h };
         toshow = show;
         color = bcolor;
         text = btext;
+        path_to_text = path;
+        lastpress = 0;
+        press = 0;
+        state = 0;
+        mouson = 0;
+    }
+    Button(int x, int y, int w, int h, bool show, SDL_Color bcolor, std::string btext) {
+        text_rect = { int(x + 0.1 * w),int(y + 0.1 * h),int(0.8 * w),int(0.8 * h) };
+        back_rect = { int(x + 0.05 * w),int(y + 0.05 * h),int(0.9 * w),int(0.9 * h) };
+        button_rect = { x,y,w,h };
+        toshow = show;
+        color = bcolor;
+        text = btext;
+        path_to_text = "TCM.TTF";
         lastpress = 0;
         press = 0;
         state = 0;
@@ -270,7 +322,9 @@ public:
     bool buttoncal(int x, int y, int w, int h);
     bool buttoncal(bool show);
     bool buttoncal();
-    void drawbutton(SDL_Renderer* renderer) const;
+    void drawbutton(SDL_Renderer* renderer) ;
+    void drawbuttonup(SDL_Renderer* renderer) ;
+    void drawbuttonup_text_left_and_line_down(SDL_Renderer* renderer);
 
     bool mouson;
     bool state;
@@ -280,6 +334,7 @@ public:
     SDL_Rect text_rect;
     SDL_Color color;
     std::string text;
+    std::string path_to_text;
 
 
     bool lastpress;
@@ -381,8 +436,10 @@ bool Button::buttoncal() {
     return state;
 }
 
-void Button::drawbutton(SDL_Renderer* renderer) const {
+void Button::drawbutton(SDL_Renderer* renderer) {
     if(toshow==true){
+        SDL_SetRenderDrawColor(renderer, 255,0, 0, 255);
+        SDL_RenderDrawRect(renderer, &button_rect);
         if (state == true) {
             SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
             if (mouson == true) {
@@ -397,9 +454,91 @@ void Button::drawbutton(SDL_Renderer* renderer) const {
         }
         SDL_RenderDrawRect(renderer, &button_rect);
         drawThickRectangleBorder(renderer, button_rect.x, button_rect.y, button_rect.w, button_rect.h, 0.01*button_rect.w);
-        //SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-        //SDL_RenderFillRect(renderer, &back_rect);
-        TTF_Font* font = TTF_OpenFont("TCM.TTF", 100);
+        TTF_Font* font = TTF_OpenFont(path_to_text.c_str(), 100);
+        int a, b;
+        TTF_SizeText(font, text.c_str(), &a, &b);
+        if (a / double(b) >1.01* text_rect.w / double(text_rect.h)) {
+            text_rect.h = b / double(a) * text_rect.w;
+        }
+        else if (a / double(b) < 0.99 * text_rect.w / double(text_rect.h)) {
+            text_rect.w = a / double(b) * text_rect.h;
+        }
+        text_rect.y = back_rect.y + 0.5 * back_rect.h - 0.5 * text_rect.h;
+        SDL_Surface* surface = TTF_RenderText_Blended(font, text.c_str(), { 255,255,255 });
+        SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+        SDL_FreeSurface(surface);
+        TTF_CloseFont(font);
+        SDL_RenderCopy(renderer, texture, nullptr, &text_rect);
+        SDL_DestroyTexture(texture);
+    }
+}
+
+void Button::drawbuttonup(SDL_Renderer* renderer) {
+    if (toshow == true) {
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+        SDL_RenderDrawRect(renderer, &button_rect);
+        if (state == true) {
+            SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
+            if (mouson == true) {
+                SDL_SetRenderDrawColor(renderer, 0, 200, 200, 255);
+            }
+        }
+        else if (state == false) {
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 200);
+            if (mouson == true) {
+                SDL_SetRenderDrawColor(renderer, 200, 200, 200, 150);
+            }
+        }
+        SDL_Rect line_rect = { button_rect.x, button_rect.y, button_rect.w, 0.05*button_rect.h };
+        SDL_RenderFillRect(renderer, &line_rect);
+        TTF_Font* font = TTF_OpenFont(path_to_text.c_str(), 100);
+        int a, b;
+        TTF_SizeText(font, text.c_str(), &a, &b);
+        if (a / double(b) > 1.01 * text_rect.w / double(text_rect.h)) {
+            text_rect.h = b / double(a) * text_rect.w;
+        }
+        else if (a / double(b) < 0.99 * text_rect.w / double(text_rect.h)) {
+            text_rect.w = a / double(b) * text_rect.h;
+        }
+        text_rect.y = back_rect.y + 0.5 * back_rect.h - 0.5 * text_rect.h;
+        SDL_Surface* surface = TTF_RenderText_Blended(font, text.c_str(), { 255,255,255 });
+        SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+        SDL_FreeSurface(surface);
+        TTF_CloseFont(font);
+        SDL_RenderCopy(renderer, texture, nullptr, &text_rect);
+        SDL_DestroyTexture(texture);
+    }
+}
+
+void Button::drawbuttonup_text_left_and_line_down(SDL_Renderer* renderer) {
+    if (toshow == true) {
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+        //SDL_RenderDrawRect(renderer, &button_rect);
+        if (state == true) {
+            SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
+            if (mouson == true) {
+                SDL_SetRenderDrawColor(renderer, 0, 200, 200, 255);
+            }
+        }
+        else if (state == false) {
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 200);
+            if (mouson == true) {
+                SDL_SetRenderDrawColor(renderer, 200, 200, 200, 150);
+            }
+        }
+        SDL_Rect line_rect = { button_rect.x, button_rect.y+0.1 * button_rect.h, button_rect.w, 0.05 * button_rect.h };
+        SDL_RenderFillRect(renderer, &line_rect);
+        TTF_Font* font = TTF_OpenFont(path_to_text.c_str(), 100);
+        int a, b;
+        TTF_SizeText(font, text.c_str(), &a, &b);
+        if (a / double(b) > 1.01 * text_rect.w / double(text_rect.h)) {
+            text_rect.h = b / double(a) * text_rect.w;
+        }
+        else if (a / double(b) < 0.99 * text_rect.w / double(text_rect.h)) {
+            text_rect.w = a / double(b) * text_rect.h;
+        }
+        text_rect.y = back_rect.y + 0.5 * back_rect.h - 0.5 * text_rect.h;
+        text_rect.x = button_rect.x;
         SDL_Surface* surface = TTF_RenderText_Blended(font, text.c_str(), { 255,255,255 });
         SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
         SDL_FreeSurface(surface);
@@ -412,7 +551,6 @@ void Button::drawbutton(SDL_Renderer* renderer) const {
 class Hovermessage {
 public:
     SDL_Rect back_rect;
-    SDL_Rect text_rect;
     std::string text;
     void cal(std::string str,int size,int w,int h);
     void draw(SDL_Renderer* renderer,int size);
@@ -425,7 +563,6 @@ public:
 
 void Hovermessage::cal(std::string str,int size,int w,int h) {
     text = str;
-    int x, y;
     int mx, my;
     SDL_GetMouseState(&mx, &my);
     TTF_Font* font = TTF_OpenFont("cnttf.ttf",size );
@@ -495,7 +632,7 @@ public:
     void menu();
     int width, height;
 private:
-    double timeingame;
+    long double timeingame;
     double timerate;
     SDL_Window* window;
     SDL_Renderer* renderer;
@@ -578,6 +715,7 @@ private:
     void update();
     void render();
     bool save(int number);
+    json savej();
     void cleanup();
     
 
@@ -685,12 +823,12 @@ void StarMap::menu() {
     Uint32 current_time = SDL_GetTicks();
     Uint32 last_time = current_time;
     double deltatime = (current_time - last_time) / 1000.0;
-    double startscroll_y=0;
-    double menuy = 0;
+    double startscroll_y=0;//存档页面滚动目标
+    double menuy = 0;//存档页面滚动逼近
     std::vector<Button> buttonofsaves;
     std::vector<int> savenumber;
     int i = 0;
-    for (const auto& entry : fs::directory_iterator("save")) {
+    for (const auto& entry : fs::directory_iterator("save")) {//识别存档加入按钮序列
         if (entry.is_regular_file()) {
             std::string filename = entry.path().filename().string();
 
@@ -705,9 +843,12 @@ void StarMap::menu() {
             }
         }
     }
-    Button startnew = Button(0.4 * width, 0.4 * height, 0.2 * width, 0.1 * height, 1, { 255,127,0,255 }, "NewGame");
-    Button startold = Button(0.4 * width, 0.6 * height, 0.2 * width, 0.1 * height, 1, { 255,127,0,255 }, "OpenSave");
+    Button startnew = Button(0.04 * width, 0.85 * height, 0.2 * width, 0.1 * height, 1, { 255,127,0,255 }, "NewUniverse");
+    Button startold = Button(0.28 * width, 0.85 * height, 0.2 * width, 0.1 * height, 1, { 255,127,0,255 }, "OldUniverse");
+    Button setting = Button(0.52 * width, 0.85 * height, 0.2 * width, 0.1 * height, 1, { 255,127,0,255 }, "Setting        ");
+    Button quitgame = Button(0.76 * width, 0.85 * height, 0.2 * width, 0.1 * height, 1, { 255,127,0,255 }, "Exit             ");
     Button returntostart= Button(0, 0, 0.1 * width, 0.1 * height, 0, { 255,127,0,255 }, "Return");
+    Button createuni = Button(0, 0, 0.1 * width, 0.1 * height, 0, { 255,127,0,255 }, "Create Universe");
     while (running) {
         current_time = SDL_GetTicks();
         deltatime = (current_time - last_time) / 1000.0;
@@ -723,12 +864,14 @@ void StarMap::menu() {
                     width = event.window.data1;
                     height = event.window.data2;
                     SDL_RenderSetLogicalSize(renderer, width, height);
-                    startnew.buttoncal(0.4 * width, 0.4 * height, 0.2 * width, 0.1 * height);
-                    startold.buttoncal(0.4 * width, 0.6 * height, 0.2 * width, 0.1 * height);
+                    startnew.buttoncal(0.04 * width, 0.85 * height, 0.2 * width, 0.1 * height);
+                    startold.buttoncal(0.28 * width, 0.85 * height, 0.2 * width, 0.1 * height);
+                    quitgame.buttoncal(0.76 * width, 0.85 * height, 0.2 * width, 0.1 * height);
+                    setting.buttoncal(0.52 * width, 0.85 * height, 0.2 * width, 0.1 * height);
                     returntostart.buttoncal(0, 0, 0.1 * width, 0.1 * height);
                 }
             }
-            else if (event.type == SDL_MOUSEWHEEL&&startold.state==1) {//存档列滚动
+            else if (event.type == SDL_MOUSEWHEEL&&(startold.state==1||startnew.state==1)) {//存档列滚动
                 if (event.wheel.y > 0) {
                     if (startscroll_y < 0){
                         startscroll_y += static_cast<int>(height / 32.0);
@@ -741,6 +884,10 @@ void StarMap::menu() {
                     startscroll_y -= static_cast<int>(height / 32.0);
                 }
             }
+            else if ( (startold.state == 0 && startnew.state ==0)) {//存档列滚动
+                startscroll_y = 0;
+                menuy = 0;
+            }
         }
         menuy+= (startscroll_y - menuy) * variable_threshold1(18 * deltatime);
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -748,37 +895,70 @@ void StarMap::menu() {
         SDL_Rect menu_rect = { 0,0 ,width, height };
         SDL_RenderCopy(renderer, menuback, nullptr, &menu_rect);
 
+        startnew.buttoncal();//旧档
+        if (startnew.state == 1) {
+            startnew.mouson = 0;
+            startnew.buttoncal(0);
+            startold.buttoncal(0);
+            quitgame.buttoncal(0);
+            setting.buttoncal(0);
+            returntostart.buttoncal(1);
+            createuni.buttoncal(0.4 * width, 0.5 * height + menuy, 0.2 * width, 0.1 * height, 1);
+            //存档按钮显示，判断，开
+            if (createuni.buttoncal()) {
+                createuni.mouson = 0;
+                run(0);
+                createuni.state = 0;
+                startnew.state = 0;
+                returntostart.state = 0;
+                startnew.buttoncal(1);
+                startold.buttoncal(1);
+                setting.buttoncal(1);
+                quitgame.buttoncal(1);
+                returntostart.buttoncal(0);//退出存档后操作
+                buttonofsaves.clear();
+                savenumber.clear();
+                i = 0;
+                for (const auto& entry : fs::directory_iterator("save")) {
+                    if (entry.is_regular_file()) {
+                        std::string filename = entry.path().filename().string();
 
-        if (startnew.buttoncal()) {//新档
-            run(0);
-            startnew.state = 0;
-            buttonofsaves.clear();
-            savenumber.clear();
-            i=0;
-            for (const auto& entry : fs::directory_iterator("save")) {
-                if (entry.is_regular_file()) {
-                    std::string filename = entry.path().filename().string();
-
-                    if (filename.size() > 14 && filename.substr(filename.size() - 14) == "star_data.json") {
-                        std::string xValue = filename.substr(0, filename.size() - 14);
-                        Button abutton;
-                        abutton = Button((0.2 + 0.4 * (i % 2)) * width, (0.4 + 0.2 * (i / 2)) * height, 0.2 * width, 0.1 * height, 0, { 255,127,0,255 }, "StarSave" + xValue);
-                        buttonofsaves.push_back(abutton);
-                        savenumber.push_back(std::stoi(xValue));
-                        i++;
+                        if (filename.size() > 14 && filename.substr(filename.size() - 14) == "star_data.json") {
+                            std::string xValue = filename.substr(0, filename.size() - 14);
+                            Button abutton;
+                            abutton = Button((0.2 + 0.4 * (i % 2)) * width, (0.1 + 0.2 * (i / 2)) * height, 0.2 * width, 0.1 * height, 0, { 255,127,0,255 }, "StarSave" + xValue);
+                            buttonofsaves.push_back(abutton);
+                            savenumber.push_back(std::stoi(xValue));
+                            i++;
+                        }
                     }
                 }
             }
+            if (returntostart.buttoncal()) {
+                startnew.state = 0;
+                returntostart.state = 0;
+                startnew.buttoncal(1);
+                startold.buttoncal(1);
+                setting.buttoncal(1);
+                quitgame.buttoncal(1);
+                returntostart.buttoncal(0);
+                createuni.buttoncal(0);
+
+            }
         }
+
         startold.buttoncal();//旧档
         if (startold.state==1) {
+            startold.mouson = 0;
             startnew.buttoncal(0);
             startold.buttoncal(0);
+            quitgame.buttoncal(0);
+            setting.buttoncal(0);
             returntostart.buttoncal(1);
             //存档按钮显示，判断，开
             for (int j = 0; j < i; j++) {
 
-                buttonofsaves[j].buttoncal((0.2 + 0.4 * (j % 2)) * width, (0.4 + 0.2 * (j / 2)) * height + menuy, 0.2 * width, 0.1 * height, 1);
+                buttonofsaves[j].buttoncal((0.2 + 0.4 * (j % 2)) * width, (0.1 + 0.2 * (j / 2)) * height + menuy, 0.2 * width, 0.1 * height, 1);
                 buttonofsaves[j].drawbutton(renderer);
                 if (buttonofsaves[j].state) {
                     run(savenumber[j]);
@@ -790,18 +970,26 @@ void StarMap::menu() {
                 returntostart.state = 0;
                 startnew.buttoncal(1);
                 startold.buttoncal(1);
+                setting.buttoncal(1);
+                quitgame.buttoncal(1);
                 returntostart.buttoncal(0);
                 //存档按钮不显示，状态归零
                 for (int j = 0; j < i; j++) {
                     Button abutton = buttonofsaves[j];
-                    abutton.buttoncal((0.2 + 0.4 * (j % 2)) * width, (0.4 + 0.2 * (j / 2)) * height + menuy, 0.2 * width, 0.1 * height, 0);
+                    abutton.buttoncal((0.2 + 0.4 * (j % 2)) * width, (0.1 + 0.2 * (j / 2)) * height + menuy, 0.2 * width, 0.1 * height, 0);
 
                 }
             }
         }
+        if (quitgame.buttoncal() == 1) {
+            running = false;
+        }
         returntostart.drawbutton(renderer);
-        startnew.drawbutton(renderer);
-        startold.drawbutton(renderer);
+        startnew.drawbuttonup_text_left_and_line_down(renderer);
+        startold.drawbuttonup_text_left_and_line_down(renderer);
+        setting.drawbuttonup_text_left_and_line_down(renderer);
+        quitgame.drawbuttonup_text_left_and_line_down(renderer);
+        createuni.drawbuttonup_text_left_and_line_down(renderer);
         if (startnew.mouson) {
             hovermessage.cal(u8"aa启动\nsdhusdhuudh\nsh\naaaaaaaaaaaaaaaaaaaaaaaaaaa", height / 32.0, width, height);
         }
@@ -813,7 +1001,7 @@ void StarMap::menu() {
 }
   
 
-void drawDashedLine(SDL_Renderer* renderer, int x1, int y1, int x2, int y2, double dashLength) {
+static void drawDashedLine(SDL_Renderer* renderer, int x1, int y1, int x2, int y2, double dashLength) {
 
     double dx = x2 - x1;
     double dy = y2 - y1;
@@ -845,7 +1033,7 @@ void drawDashedLine(SDL_Renderer* renderer, int x1, int y1, int x2, int y2, doub
    // SDL_RenderDrawLine(renderer, static_cast<int>(x1 + numDashes * dash_dx), static_cast<int>(y1 + numDashes * dash_dy), x2, y2);
 }
 
-std::string formatTime(double seconds) {
+static std::string formatTime(double seconds) {
     // Define the units in seconds
     const double yearInSeconds = 31536000;  // 365 days
     const double monthInSeconds = 2592000;  // 30 days
@@ -934,6 +1122,82 @@ SDL_Texture* StarMap::load_texture(const std::string& path) {//图像加载，�
     return texture;
 }
 
+json StarMap::savej() {
+    json j;
+    for (auto& star : stars) {
+        json star_json;
+        star_json["name"] = star.number;
+        star_json["absolute_pos"]["x"] = star.absolute_pos.x;
+        star_json["absolute_pos"]["y"] = star.absolute_pos.y;
+        star_json["absolute_pos"]["z"] = star.absolute_pos.z;
+        star_json["temperature"] = star.temperature;
+        star_json["power"] = star.power;
+        star_json["dysondensity"] = star.dysondensity;
+        star_json["radius"] = star.radius;
+        star_json["teamname"] = star.teamname;
+        star_json["needtoshowpos"] = star.needtoshowpos;
+        star_json["type"] = star.type;
+
+        j["stars"].push_back(star_json);
+    }
+    for (auto& route : routes) {
+        json route_json;
+
+        route_json["show"] = route.show;
+
+        route_json["origin"]["name"] = route.origin.number;
+        route_json["origin"]["absolute_pos"]["x"] = route.origin.absolute_pos.x;
+        route_json["origin"]["absolute_pos"]["y"] = route.origin.absolute_pos.y;
+        route_json["origin"]["absolute_pos"]["z"] = route.origin.absolute_pos.z;
+        route_json["origin"]["temperature"] = route.origin.temperature;
+        route_json["origin"]["power"] = route.origin.power;
+        route_json["origin"]["dysondensity"] = route.origin.dysondensity;
+        route_json["origin"]["radius"] = route.origin.radius;
+        route_json["origin"]["teamname"] = route.origin.teamname;
+        route_json["origin"]["needtoshowpos"] = route.origin.needtoshowpos;
+        route_json["origin"]["type"] = route.origin.type;
+
+        // Write destin details
+        route_json["destin"]["name"] = route.destin.number;
+        route_json["destin"]["absolute_pos"]["x"] = route.destin.absolute_pos.x;
+        route_json["destin"]["absolute_pos"]["y"] = route.destin.absolute_pos.y;
+        route_json["destin"]["absolute_pos"]["z"] = route.destin.absolute_pos.z;
+        route_json["destin"]["temperature"] = route.destin.temperature;
+        route_json["destin"]["power"] = route.destin.power;
+        route_json["destin"]["dysondensity"] = route.destin.dysondensity;
+        route_json["destin"]["radius"] = route.destin.radius;
+        route_json["destin"]["teamname"] = route.destin.teamname;
+        route_json["destin"]["needtoshowpos"] = route.destin.needtoshowpos;
+        route_json["destin"]["type"] = route.destin.type;
+        for (auto& ship : route.ships) {
+            json ship_json;
+            ship_json["number"] = ship.number;
+            ship_json["category"] = ship.category;
+            ship_json["dir"] = ship.dir;
+            ship_json["loadmess"] = ship.loadmess;
+            ship_json["fuelmess"] = ship.fuelmess;
+            ship_json["volatilesmess"] = ship.volatilesmess;
+            ship_json["starttime"] = ship.starttime;
+            ship_json["endtime"] = ship.endtime;
+            ship_json["v"] = ship.v;
+            route_json["ships"].push_back(ship_json);
+        }
+
+        j["routes"].push_back(route_json);
+    }
+    j["timeingame"] = timeingame;
+    j["cenposcam"]["x"] = cenposcam.x;
+    j["cenposcam"]["y"] = cenposcam.y;
+    j["cenposcam"]["z"] = cenposcam.z;
+    j["posx"] = posx/double(width);
+    j["posy"] = posy/double(height);
+    j["r"] = r;
+    j["rtarget"] = rtarget;
+    
+
+    return j;
+}
+
 bool StarMap::save(int number) {
 
     std::string filepath = "save/"+std::to_string(number) + "star_data.json";
@@ -943,70 +1207,7 @@ bool StarMap::save(int number) {
         if (!outFile) {
             std::cerr << "存档炸了" << std::endl;
         }
-        json j;
-        for (auto& star : stars) {
-            json star_json;
-            star_json["name"] = star.number;
-            star_json["absolute_pos"]["x"] = star.absolute_pos.x;
-            star_json["absolute_pos"]["y"] = star.absolute_pos.y;
-            star_json["absolute_pos"]["z"] = star.absolute_pos.z;
-            star_json["temperature"] = star.temperature;
-            star_json["power"] = star.power;
-            star_json["dysondensity"] = star.dysondensity;
-            star_json["radius"] = star.radius;
-            star_json["teamname"] = star.teamname;
-            star_json["needtoshowpos"] = star.needtoshowpos;
-            star_json["type"] = star.type;
-
-            j["stars"].push_back(star_json);
-        }
-        for (auto& route : routes) {
-            json route_json;
-
-
-
-            // Write origin details
-            route_json["origin"]["name"] = route.origin.number;
-            route_json["origin"]["absolute_pos"]["x"] = route.origin.absolute_pos.x;
-            route_json["origin"]["absolute_pos"]["y"] = route.origin.absolute_pos.y;
-            route_json["origin"]["absolute_pos"]["z"] = route.origin.absolute_pos.z;
-            route_json["origin"]["temperature"] = route.origin.temperature;
-            route_json["origin"]["power"] = route.origin.power;
-            route_json["origin"]["dysondensity"] = route.origin.dysondensity;
-            route_json["origin"]["radius"] = route.origin.radius;
-            route_json["origin"]["teamname"] = route.origin.teamname;
-            route_json["origin"]["needtoshowpos"] = route.origin.needtoshowpos;
-            route_json["origin"]["type"] = route.origin.type;
-
-            // Write destin details
-            route_json["destin"]["name"] = route.destin.number;
-            route_json["destin"]["absolute_pos"]["x"] = route.destin.absolute_pos.x;
-            route_json["destin"]["absolute_pos"]["y"] = route.destin.absolute_pos.y;
-            route_json["destin"]["absolute_pos"]["z"] = route.destin.absolute_pos.z;
-            route_json["destin"]["temperature"] = route.destin.temperature;
-            route_json["destin"]["power"] = route.destin.power;
-            route_json["destin"]["dysondensity"] = route.destin.dysondensity;
-            route_json["destin"]["radius"] = route.destin.radius;
-            route_json["destin"]["teamname"] = route.destin.teamname;
-            route_json["destin"]["needtoshowpos"] = route.destin.needtoshowpos;
-            route_json["destin"]["type"] = route.destin.type;
-            for (auto& ship : route.ships) {
-                json ship_json;
-                ship_json["number"] = ship.number;
-                ship_json["category"] = ship.category;
-                ship_json["dir"] = ship.dir;
-                ship_json["loadmess"] = ship.loadmess;
-                ship_json["fuelmess"] = ship.fuelmess;
-                ship_json["volatilesmess"] = ship.volatilesmess;
-                ship_json["starttime"] = ship.starttime;
-                ship_json["vel"] = ship.vel;
-                route_json["ships"].push_back(ship_json);
-            }
-
-            j["routes"].push_back(route_json);
-        }
-        j["timeingame"] = timeingame;
-        outFile << std::setw(4) << j << std::endl;
+        outFile << std::setw(4) << savej() << std::endl;
     }
     else if (number == 0) {
  
@@ -1028,71 +1229,9 @@ bool StarMap::save(int number) {
                     std::cerr << "存档炸了" << std::endl;
                 }
 
-                json j;
-                for (auto& star : stars) {
-                    json star_json;
-                    star_json["name"] = star.number;
-                    star_json["absolute_pos"]["x"] = star.absolute_pos.x;
-                    star_json["absolute_pos"]["y"] = star.absolute_pos.y;
-                    star_json["absolute_pos"]["z"] = star.absolute_pos.z;
-                    star_json["temperature"] = star.temperature;
-                    star_json["power"] = star.power;
-                    star_json["dysondensity"] = star.dysondensity;
-                    star_json["radius"] = star.radius;
-                    star_json["teamname"] = star.teamname;
-                    star_json["needtoshowpos"] = star.needtoshowpos;
-                    star_json["type"] = star.type;
-
-                    j["stars"].push_back(star_json);
-                }
-                for (auto& route : routes) {
-                    json route_json;
-
-
-
-                    // Write origin details
-                    route_json["origin"]["name"] = route.origin.number;
-                    route_json["origin"]["absolute_pos"]["x"] = route.origin.absolute_pos.x;
-                    route_json["origin"]["absolute_pos"]["y"] = route.origin.absolute_pos.y;
-                    route_json["origin"]["absolute_pos"]["z"] = route.origin.absolute_pos.z;
-                    route_json["origin"]["temperature"] = route.origin.temperature;
-                    route_json["origin"]["power"] = route.origin.power;
-                    route_json["origin"]["dysondensity"] = route.origin.dysondensity;
-                    route_json["origin"]["radius"] = route.origin.radius;
-                    route_json["origin"]["teamname"] = route.origin.teamname;
-                    route_json["origin"]["needtoshowpos"] = route.origin.needtoshowpos;
-                    route_json["origin"]["type"] = route.origin.type;
-
-                    // Write destin details
-                    route_json["destin"]["name"] = route.destin.number;
-                    route_json["destin"]["absolute_pos"]["x"] = route.destin.absolute_pos.x;
-                    route_json["destin"]["absolute_pos"]["y"] = route.destin.absolute_pos.y;
-                    route_json["destin"]["absolute_pos"]["z"] = route.destin.absolute_pos.z;
-                    route_json["destin"]["temperature"] = route.destin.temperature;
-                    route_json["destin"]["power"] = route.destin.power;
-                    route_json["destin"]["dysondensity"] = route.destin.dysondensity;
-                    route_json["destin"]["radius"] = route.destin.radius;
-                    route_json["destin"]["teamname"] = route.destin.teamname;
-                    route_json["destin"]["needtoshowpos"] = route.destin.needtoshowpos;
-                    route_json["destin"]["type"] = route.destin.type;
-                    for (auto& ship : route.ships) {
-                        json ship_json;
-                        ship_json["number"] = ship.number;
-                        ship_json["category"] = ship.category;
-                        ship_json["dir"] = ship.dir;
-                        ship_json["loadmess"] = ship.loadmess;
-                        ship_json["fuelmess"] = ship.fuelmess;
-                        ship_json["volatilesmess"] = ship.volatilesmess;
-                        ship_json["starttime"] = ship.starttime;
-                        ship_json["vel"] = ship.vel;
-                        route_json["ships"].push_back(ship_json);
-                    }
-
-                    j["routes"].push_back(route_json);
-                }
-                j["timeingame"] = timeingame;
+               
                 aaaa = 0;
-                outFile << std::setw(4) << j << std::endl;
+                outFile << std::setw(4) << savej() << std::endl;
 
             }
             
@@ -1116,6 +1255,7 @@ void StarMap::generate_stars() {//生成，可能无误
     std::uniform_real_distribution<> radius_dis(-3.3, -1);
     std::cout << std::ceil(nstar0 * 6 / PI) << std::endl;
     std::cout << rmap0 << std::endl;
+    int nnn = 0;
     for (int i = 0; i < std::ceil(nstar0 * 6 / PI); i++) {
         double xstar0 = dis(gen);
         double ystar0 = dis(gen);
@@ -1146,6 +1286,7 @@ void StarMap::generate_stars() {//生成，可能无误
                 0
             };
             stars.push_back(astar);
+            nnn =i;
         }
         else { 
             i -= 1;
@@ -1163,6 +1304,12 @@ void StarMap::generate_stars() {//生成，可能无误
     add_ship_into_route(2, 3, 1, 0, 0, 0.7, 0, 0, 0);
     add_ship_into_route(2, 3, 1, 1, 0, 0.8, 0, 0, 0);
     add_ship_into_route(2, 3, 1, 2, 0, 1, 0, 0, 0);
+    std::uniform_int_distribution<> n_dis(0, nnn);
+    std::uniform_int_distribution<> cat_dis(0, 2);
+    std::uniform_int_distribution<> dir_dis(0, 1);
+    for (int i = 0; i < 10000; i++) {
+        add_ship_into_route(n_dis(gen), n_dis(gen), 1, cat_dis(gen), dir_dis(gen), power_dis(gen), 0, 0, 0);
+    }
     Star tstar = {
         114514,
         Vec3(0, 0, -10),
@@ -1242,6 +1389,7 @@ void StarMap::generate_opoints() {
     }
 
 }
+
 void StarMap::run(int number) {//主循环，可能完善
     if (number == 0) {
         generate_stars();
@@ -1255,7 +1403,7 @@ void StarMap::run(int number) {//主循环，可能完善
     deltatime = (current_time - last_time) / 1000.0;
     last_time = current_time;
 
-    while (running&& !ifsave) {
+    while (running && !ifsave) {
 
         
 
@@ -1305,6 +1453,8 @@ void StarMap::read(int number) {
     for (auto& route_json : j["routes"]) {
         Route route;
 
+        route.show = route_json["show"];
+
         route.origin.number = route_json["origin"]["name"];
         route.origin.absolute_pos.x = route_json["origin"]["absolute_pos"]["x"];
         route.origin.absolute_pos.y = route_json["origin"]["absolute_pos"]["y"];
@@ -1338,8 +1488,8 @@ void StarMap::read(int number) {
             ship.fuelmess = ship_json["fuelmess"];
             ship.volatilesmess = ship_json["volatilesmess"];
             ship.starttime = ship_json["starttime"];
-            ship.vel = ship_json["vel"];
-
+            ship.endtime = ship_json["endtime"];
+            ship.v = ship_json["v"];
 
             route.ships.push_back(ship);
         }
@@ -1347,6 +1497,13 @@ void StarMap::read(int number) {
         routes.push_back(route);
     }
     timeingame = j["timeingame"];
+    cenposcam.x = j["cenposcam"]["x"];
+    cenposcam.y = j["cenposcam"]["y"];
+    cenposcam.z = j["cenposcam"]["z"];
+    posx= j["posx"]*width;
+    posy = j["posy"]*height;
+    r = j["r"];
+    rtarget = j["rtarget"];
     file.close();
 }
 
@@ -1523,7 +1680,7 @@ void StarMap::update_camera() {
         posy = 0;
     }
     theta = posx / width * 4 * PI;
-    phi = 0.999*(posy / height - 0.5) * PI;
+    phi = 0.99*(posy / height - 0.5) * PI;
     
     reposcam.x = r * std::cos(phi) * std::cos(theta);
     reposcam.y = r * std::cos(phi) * std::sin(theta);
@@ -1548,7 +1705,7 @@ void StarMap::update_camera() {
 void StarMap::add_ship_into_route(int number1, int number2, int numberofship, int cat, bool dir, double v, double m1, double m2, double m3) {
     int sm;
     int bm;
-    Starship ship = Starship(numberofship, cat, dir,v, m1, m2, m3, timeingame);
+    
     if (number1 != number2) {
         if (number1 > number2) {
             bm = number1;
@@ -1559,26 +1716,31 @@ void StarMap::add_ship_into_route(int number1, int number2, int numberofship, in
             bm = number2;
             sm = number1;
         }
-        auto it = std::find_if(routes.begin(), routes.end(),
-            [sm, bm](const Route& d) {
-                return d.origin.number == sm && d.destin.number == bm;
-            });
+        if (std::find_if(stars.begin(), stars.end(), [sm](const Star& d) {return d.number == sm; })!=stars.end()&& std::find_if(stars.begin(), stars.end(), [bm](const Star& d) {return d.number == bm; }) != stars.end()) {
+            auto it = std::find_if(routes.begin(), routes.end(),
+                [sm, bm](const Route& d) {
+                    return d.origin.number == sm && d.destin.number == bm;
+                });
+            Star astar = stars[std::distance(stars.begin(), std::find_if(stars.begin(), stars.end(), [sm](const Star& d) {return d.number == sm; }))];//需要处理不存在恒星。。。。但我暂时懒得
+            Star bstar = stars[std::distance(stars.begin(), std::find_if(stars.begin(), stars.end(), [bm](const Star& d) {return d.number == bm; }))];
+            double dis = vector_length(subtract_vectors(astar.absolute_pos, bstar.absolute_pos));
+            Starship ship = Starship(numberofship, cat, dir, timeingame + dis / v, m1, m2, m3, timeingame,v);
+            if (it != routes.end()) {
 
-        if (it != routes.end()) {
+                it->ships.push_back(ship);
+            }
+            else
+            {
+                Star ostar = stars[std::distance(stars.begin(), std::find_if(stars.begin(), stars.end(), [sm](const Star& d) {return d.number == sm; }))];//同上
+                Star dstar = stars[std::distance(stars.begin(), std::find_if(stars.begin(), stars.end(), [bm](const Star& d) {return d.number == bm; }))];
+                Route route = Route(ostar, dstar);
+                route.ships.push_back(ship);
+                route.show = 0;
+                routes.push_back(route);
 
-            it->ships.push_back(ship);
+            }
+
         }
-        else
-        {
-            Star ostar =stars[std::distance(stars.begin(), std::find_if(stars.begin(), stars.end(), [sm](const Star& d) {return d.number == sm; }))];//加处理不存在恒星
-            Star dstar = stars[std::distance(stars.begin(), std::find_if(stars.begin(), stars.end(), [bm](const Star& d) {return d.number == bm; }))];
-            Route route = Route(ostar, dstar);
-            route.ships.push_back(ship);
-            routes.push_back(route);
-
-        }
-
-
 
 
 
@@ -1588,7 +1750,7 @@ void StarMap::add_ship_into_route(int number1, int number2, int numberofship, in
 
 void StarMap::sortsatrsbydistance() {//待优化
     // 分离距离小于10的星星和其他星星
-    std::vector<Star> starsLessThan10;
+    /*std::vector<Star> starsLessThan10;
     std::vector<Star> starsGreaterThanEqual10;
 
     for (const Star& star : stars) {
@@ -1610,7 +1772,7 @@ void StarMap::sortsatrsbydistance() {//待优化
     stars.clear();
     stars.reserve(starsGreaterThanEqual10.size() + starsLessThan10.size());
     stars.insert(stars.end(), starsGreaterThanEqual10.begin(), starsGreaterThanEqual10.end());
-    stars.insert(stars.end(), starsLessThan10.begin(), starsLessThan10.end());
+    stars.insert(stars.end(), starsLessThan10.begin(), starsLessThan10.end());*/
 }
 
 void StarMap::update_stars() {//右键边栏目标确定，双击移动目标确定，可能完善
@@ -1652,30 +1814,31 @@ void StarMap::update_stars() {//右键边栏目标确定，双击移动目标确
             star.zpoint = { static_cast<int>(zscreenx), static_cast<int>(zscreeny) };
             star.zpdep = -zz;
         }
-
-        if ((buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) && (mouseX / static_cast<double>(width) < (1 - messagewidthrate)) && star.type == 0&& !menubutton.buttoncal(0, 0, 0.1 * width, 0.1 * height, 1) && !menubutton.mouson) {
-            if ((mouseX - screenx) * (mouseX - screenx) + (mouseY - screeny) * (mouseY - screeny) < pow((std::max(ll / 8, starrad)), 2)) {
-                nearstars++;
-                showmessage = true;
-                targetname = star.number;
-                targetcolor = kelvin_to_rgb(star.temperature);
-                targetcloud = star.dysondensity;
+        if (star.screen_pos.x >= 0 && star.screen_pos.x < width &&
+            star.screen_pos.y >= 0 && star.screen_pos.y < height && star.depth>0 && (mouseX  < ( messagex))) {
+            if ((buttons & SDL_BUTTON(SDL_BUTTON_RIGHT))  && star.type == 0 && !menubutton.buttoncal(0, 0, 0.1 * width, 0.1 * height, 1) && !menubutton.mouson) {
+                if ((mouseX - screenx) * (mouseX - screenx) + (mouseY - screeny) * (mouseY - screeny) < pow((std::max(ll / 8, starrad)), 2)) {
+                    nearstars++;
+                    showmessage = true;
+                    targetname = star.number;
+                    targetcolor = kelvin_to_rgb(star.temperature);
+                    targetcloud = star.dysondensity;
+                }
+                if (nearstars == 0) {
+                    showmessage = false;
+                }
             }
-            if (nearstars == 0) {
-                showmessage = false;
+            if (doubleclick == true) {
+                if ((mouseX - screenx) * (mouseX - screenx) + (mouseY - screeny) * (mouseY - screeny) < pow((std::max(ll / 8, starrad)), 2) && star.type == 0) {
+                    totar = true;
+                    target = star.absolute_pos;
+                }
+            }
+            if ((mouseX - screenx) * (mouseX - screenx) + (mouseY - screeny) * (mouseY - screeny) < pow((std::max(ll / 8, starrad)), 2) && star.type == 0 && !menubutton.buttoncal(0, 0, 0.1 * width, 0.1 * height, 1)) {
+                std::string str = u8"恒星" + std::to_string(star.number) + "\n" + u8"半径:" + std::to_string(star.radius / 0.000016) + u8"天文单位" + "\n" + u8"功率:" + std::to_string(star.power) + u8"倍太阳";
+                hovermessage.cal(str, height / 70.0, width, height);
             }
         }
-        if (doubleclick == true) {
-            if ((mouseX - screenx) * (mouseX - screenx) + (mouseY - screeny) * (mouseY - screeny) < pow((std::max(ll / 8, starrad)), 2) && star.type == 0) {
-                totar = true;
-                target = star.absolute_pos;
-            }
-        }
-        if ((mouseX - screenx) * (mouseX - screenx) + (mouseY - screeny) * (mouseY - screeny) < pow((std::max(ll / 8, starrad)), 2) && star.type == 0) {
-            std::string str = u8"恒星" + std::to_string( star.number) +"\n"+ u8"半径:"+ std::to_string(star.radius/0.000016) +u8"天文单位" + "\n"+ u8"功率:" + std::to_string(star.power) + u8"倍太阳";
-            hovermessage.cal(str, height / 70.0, width, height);
-        }
-
 
     }
 
@@ -1724,10 +1887,10 @@ void StarMap::updata_ship() {
         }
         for (std::vector<Starship>::iterator ship = route->ships.begin(); ship != route->ships.end();) {
             if (ship->dir == 0) {
-                ship->shippos = add_vectors(route->origin.absolute_pos, scalar_multiply(ship->vel * (timeingame - ship->starttime) / (365 * 24 * 3600), normalize_vector(subtract_vectors(route->destin.absolute_pos, route->origin.absolute_pos))));
+                ship->shippos = add_vectors(route->origin.absolute_pos, scalar_multiply((timeingame - ship->starttime)/ (ship->endtime - ship->starttime) / (365 * 24 * 3600), (subtract_vectors(route->destin.absolute_pos, route->origin.absolute_pos))));
             }
             else {
-                ship->shippos = add_vectors(route->destin.absolute_pos, scalar_multiply(ship->vel * (timeingame - ship->starttime) / (365 * 24 * 3600), normalize_vector(subtract_vectors(route->origin.absolute_pos, route->destin.absolute_pos))));
+                ship->shippos = add_vectors(route->destin.absolute_pos, scalar_multiply((timeingame - ship->starttime)/ (ship->endtime - ship->starttime) / (365 * 24 * 3600), (subtract_vectors(route->origin.absolute_pos, route->destin.absolute_pos))));
             }
             Vec3 relative_pos = subtract_vectors(ship->shippos, poscam);
             double projx = dot_product(relative_pos, vecx);
@@ -1815,10 +1978,10 @@ void StarMap::render() {
             timerate /= 1.584893;
         }
         stop.buttoncal(0.85 * width, 0, 0.1 * width, 0.07 * height, 1);
-        std::string ratetext = std::to_string(timerate);
+        std::string ratetext = std::to_string(timerate);//时间显示
         SDL_Color text_color = { 255, 255, 255, 255 };
         TTF_Font* font = TTF_OpenFont("file-deletion.ttf", height / 32.0);
-        SDL_Surface* surface = TTF_RenderText_Blended(font, ratetext.c_str(), text_color);//函数未定义
+        SDL_Surface* surface = TTF_RenderText_Blended(font, ratetext.c_str(), text_color);
         SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
         int text_width = surface->w;//单行字尺寸
         int text_height = surface->h;
@@ -1832,14 +1995,16 @@ void StarMap::render() {
         ShipAndRKKV.buttoncal(0.2 * width, 0.5 * height + menuscolly, 0.2 * width, 0.07 * height, 0);
     }
     menubutton.drawbutton(renderer);
-    coordinate.drawbutton(renderer);
+    coordinate.drawbuttonup_text_left_and_line_down(renderer);
     exitbutton.drawbutton(renderer);
     addtimerate.drawbutton(renderer);
     subtimerate.drawbutton(renderer);
     ShipAndRKKV.drawbutton(renderer);
     stop.drawbutton(renderer);
     lastopen = open;
-    draw_info_panel();
+    if (!open) { 
+        draw_info_panel(); 
+    }
     hovermessage.draw(renderer, height / 70.0);
     SDL_RenderPresent(renderer);
 }
@@ -1938,11 +2103,13 @@ void StarMap::draw_stars() {
 }
 
 void StarMap::draw_ships() {
+
+    bool fir = 1;
     for (auto& route : routes) {
-        bool frse=0;
-        bool emse=0;
-        bool frat=0;
-        bool emat=0;
+        bool frse = 0;
+        bool emse = 0;
+        bool frat = 0;
+        bool emat = 0;
         if (route.destin.depth > 0 || route.origin.depth > 0) {
             if (route.destin.depth > 0 && route.origin.depth < 0) {
                 route.origin.screen_pos.x = route.destin.screen_pos.x - (route.origin.screen_pos.x - route.destin.screen_pos.x) * double(route.destin.depth - route.origin.depth) / (route.destin.depth);
@@ -1952,6 +2119,33 @@ void StarMap::draw_ships() {
                 route.destin.screen_pos.x = route.origin.screen_pos.x - (route.destin.screen_pos.x - route.origin.screen_pos.x) * double(route.origin.depth - route.destin.depth) / (route.origin.depth);
                 route.destin.screen_pos.y = route.origin.screen_pos.y - (route.destin.screen_pos.y - route.origin.screen_pos.y) * double(route.origin.depth - route.destin.depth) / (route.origin.depth);
             }
+
+            bool mouson = isMouseNearLine(route.destin.screen_pos, route.origin.screen_pos);
+            if (menubutton.buttoncal()) {
+                mouson = 0;
+            }
+            if (!fir) {
+                mouson = 0;
+            }
+            if (mouson) {
+                fir = 0;
+                if (!menubutton.buttoncal()) {
+                    std::string str = u8"航线，天体" + std::to_string(route.origin.number)+u8"到天体" + std::to_string(route.destin.number) + "\n" + u8"长:" + std::to_string(vector_length(subtract_vectors(route.origin.absolute_pos, route.destin.absolute_pos))) + u8"光年" + "\n" + u8"当前飞行物" + std::to_string(route.ships.size()) + u8"个";
+                    hovermessage.cal(str, height / 70.0, width, height);
+                }
+            }
+            route.p = 0;
+            int aaa, bbb;
+            const Uint32 mou = SDL_GetMouseState(&aaa, &bbb);
+            if (mouson == true && (mou & SDL_BUTTON(SDL_BUTTON_LEFT))) {
+                route.p = true;
+            }
+            if (!route.p && route.lp && mouson) {
+                route.show = !route.show;
+
+            }
+            route.lp = route.p;
+
             for (auto& ship : route.ships) {
                 if ((ship.dir == 0 && route.origin.teamname == "fr") || (ship.dir == 1 && route.destin.teamname == "fr")) {
                     if (ship.category == 0) {
@@ -1970,7 +2164,7 @@ void StarMap::draw_ships() {
                     }
                 }
 
-                if (ship.shipdep > 0 && ship.shippoint.x>0 && ship.shippoint.x < width && ship.shippoint.y>0 && ship.shippoint.y < height) {
+                if (ship.shipdep > 0 && ship.shippoint.x > 0 && ship.shippoint.x < width && ship.shippoint.y>0 && ship.shippoint.y < height && route.show) {
                     SDL_Color color = { 0,0,0,0 };
                     if (ship.category == 0) {
                         color = { 0,100,255,0 };
@@ -2001,29 +2195,71 @@ void StarMap::draw_ships() {
                     }
                     SDL_Rect dest_rect = { int(ship.shippoint.x - ll / 2 + 1), int(ship.shippoint.y - ll / 2 + 1), int(ll), int(ll) };
                     renderTextureWithColor(renderer, modified_image, { color.r,color.g,color.b,255 }, dest_rect);
+                    if ((aaa - ship.shippoint.x) * (aaa - ship.shippoint.x) + (bbb - ship.shippoint.y) * (bbb - ship.shippoint.y) < pow((std::max(ll / 8, 2.0)), 2) && !menubutton.buttoncal()) {
+                        std::string str = u8"飞行器" + std::to_string(ship.number) + "\n" + u8"速度:" + std::to_string(ship.v) + u8"倍光速";
+                        hovermessage.cal(str, height / 70.0, width, height);
+                    }
                 }
-            }
+            }//上为飞船下为航道
+            if (route.show) {
                 if (frse) {
-                    SDL_SetRenderDrawColor(renderer, 60, 179, 113, 100);//绿
+                    SDL_SetRenderDrawColor(renderer, 60, 179, 113, 200);//绿
                 }
                 if (emse) {
-                    SDL_SetRenderDrawColor(renderer, 0, 191, 255, 100);//青
+                    SDL_SetRenderDrawColor(renderer, 0, 191, 255, 200);//青
                 }
 
                 if (frat) {
-                    SDL_SetRenderDrawColor(renderer, 153, 50, 204, 130);//紫
+                    SDL_SetRenderDrawColor(renderer, 153, 50, 204, 255);//紫
+                }
+                if (emat) {
+                    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);//红
+                }
+                if ((frat || frse) && (emat || emse)) {
+                    SDL_SetRenderDrawColor(renderer, 255, 215, 0, 255);
+                }
+            }
+            else if (mouson) {
+                if (frse) {
+                    SDL_SetRenderDrawColor(renderer, 60, 179, 113, 120);//绿
+                }
+                if (emse) {
+                    SDL_SetRenderDrawColor(renderer, 0, 191, 255, 120);//青
+                }
+
+                if (frat) {
+                    SDL_SetRenderDrawColor(renderer, 153, 50, 204, 150);//紫
                 }
                 if (emat) {
                     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 130);//红
                 }
-                if((frat||frse)&&(emat||emse)) {
+                if ((frat || frse) && (emat || emse)) {
                     SDL_SetRenderDrawColor(renderer, 255, 215, 0, 130);
                 }
+            }
+            else {
+                if (frse) {
+                    SDL_SetRenderDrawColor(renderer, 60, 179, 113, 30);//绿
+                }
+                if (emse) {
+                    SDL_SetRenderDrawColor(renderer, 0, 191, 255, 30);//青
+                }
+
+                if (frat) {
+                    SDL_SetRenderDrawColor(renderer, 153, 50, 204, 41);//紫
+                }
+                if (emat) {
+                    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 26);//红
+                }
+                if ((frat || frse) && (emat || emse)) {
+                    SDL_SetRenderDrawColor(renderer, 255, 215, 0, 26);
+                }
+            }
             SDL_RenderDrawLine(renderer, route.destin.screen_pos.x, route.destin.screen_pos.y, route.origin.screen_pos.x, route.origin.screen_pos.y);
-            
+
         }
     }
-  
+
 }
 
 void StarMap::draw_opoints() {
