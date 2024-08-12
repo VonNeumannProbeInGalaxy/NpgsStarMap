@@ -1,6 +1,7 @@
 ﻿#include <SDL.h>
 #include <SDL_image.h>
 #include <cmath>
+#include <cstdio>
 #include <vector>
 #include <random>
 #include <string>
@@ -526,9 +527,10 @@ void Button::drawbuttonup_text_left_and_line_down(SDL_Renderer* renderer) {
                 SDL_SetRenderDrawColor(renderer, 200, 200, 200, 150);
             }
         }
-        SDL_Rect line_rect = { button_rect.x, button_rect.y+0.1 * button_rect.h, button_rect.w, 0.05 * button_rect.h };
+        SDL_Rect line_rect = { button_rect.x, button_rect.y+0.2 * button_rect.h, button_rect.w, 2 };
         SDL_RenderFillRect(renderer, &line_rect);
         TTF_Font* font = TTF_OpenFont(path_to_text.c_str(), 100);
+       // TTF_SetFontHinting(font, TTF_HINTING_NORMAL);
         int a, b;
         TTF_SizeText(font, text.c_str(), &a, &b);
         if (a / double(b) > 1.01 * text_rect.w / double(text_rect.h)) {
@@ -547,7 +549,160 @@ void Button::drawbuttonup_text_left_and_line_down(SDL_Renderer* renderer) {
         SDL_DestroyTexture(texture);
     }
 }
-//————————————————————————————————————————————————————————————————————————————————————————————————————
+//----------------------------------------------------------------------------------------------
+class InputBox {
+public:
+    SDL_Rect back_rect;
+    SDL_Rect text_rect;
+    std::string prompttext;
+    std::string inputtext;
+    bool mouson;
+    bool state;
+    bool toshow;
+    bool lastpress;
+    bool press;
+    std::string path_to_text;
+
+    std::string cal(int x, int y, int w, int h, bool show);
+    std::string cal(int x, int y, int w, int h);
+    std::string cal(bool show);
+    std::string corecal();
+    const Uint8* currentState = SDL_GetKeyboardState(NULL);
+    Uint8 previousState[SDL_NUM_SCANCODES] = { 0 };
+
+    void clear();
+    void draw(SDL_Renderer* renderer);
+
+
+    InputBox(int x,int y,int w,int h,bool show, std::string ptext, std::string path)
+    {
+        text_rect = { int(x + 0.1 * w),int(y + 0.1 * h),int(0.8 * w),int(0.8 * h) };
+        back_rect = { x,y,w,h };
+        toshow = show;
+        prompttext = ptext;
+        path_to_text = path;
+        lastpress = 0;
+        press = 0;
+        state = 0;
+        mouson = 0;
+    }
+    InputBox(int x, int y, int w, int h, bool show, std::string ptext)
+    {
+        text_rect = { int(x + 0.1 * w),int(y + 0.1 * h),int(0.8 * w),int(0.8 * h) };
+        back_rect = { x,y,w,h };
+        toshow = show;
+        prompttext = ptext;
+        path_to_text = "TCM.TTF";
+        lastpress = 0;
+        press = 0;
+        state = 0;
+        mouson = 0;
+    }
+
+};
+
+std::string InputBox::corecal() {
+    if (toshow == true) {//是否在输入状态
+        int mx, my;
+        const Uint32 moubuts = SDL_GetMouseState(&mx, &my);
+        SDL_Point mp = { mx,my };
+        mouson = SDL_PointInRect(&mp, &back_rect);
+
+        press = 0;
+        if (mouson == true && (moubuts & SDL_BUTTON(SDL_BUTTON_LEFT))) {
+            press = true;
+        }
+        if (press && !lastpress && mouson) {
+            state = 1;
+
+        }
+        if (mouson == false && (moubuts & SDL_BUTTON(SDL_BUTTON_LEFT))) {
+            state = 0;
+        }
+        lastpress = press;
+
+        currentState = SDL_GetKeyboardState(NULL);
+        for (int i = 0; i < SDL_NUM_SCANCODES; ++i) {
+            if (currentState[i] && !previousState[i]) {
+                if (state) {
+                    if ((i >= 30 && i <= 39) || (i>=4&&i<=29)) {
+                        inputtext += SDL_GetScancodeName((SDL_Scancode)i);
+                    }
+                    if (i == 42) {
+                        if (!inputtext.empty() && state) {
+                            inputtext.pop_back();
+                        }
+                    }
+                    if (i == 40) {
+                        if (state) {
+                            state = 0;
+                        }
+                    }
+                }
+            }
+        }
+        memcpy(previousState, currentState, SDL_NUM_SCANCODES);
+        return inputtext;
+    }
+}
+
+std::string InputBox::cal(int x, int y, int w, int h, bool show) {
+    back_rect = { x,y,w,h };
+    text_rect = { int(x + 0.1 * w),int(y + 0.1 * h),int(0.8 * w),int(0.8 * h) };
+    toshow = show;
+    return corecal();
+}
+
+std::string InputBox::cal(int x, int y, int w, int h) {
+    back_rect = { x,y,w,h };
+    text_rect = { int(x + 0.1 * w),int(y + 0.1 * h),int(0.8 * w),int(0.8 * h) };
+    return corecal();
+}
+
+std::string InputBox::cal(bool show) {
+    toshow = show;
+    return corecal();
+}
+
+void InputBox::clear() {
+    inputtext = "";
+}
+
+void InputBox::draw(SDL_Renderer* renderer){
+    if (toshow == true) {
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+        SDL_RenderDrawRect(renderer, &back_rect);
+        if (state == true) {
+            SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
+        }
+        else if (state == false) {
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 200);
+            if (mouson == true) {
+                SDL_SetRenderDrawColor(renderer, 200, 200, 200, 150);
+            }
+        }
+        SDL_RenderDrawRect(renderer, &back_rect);
+        drawThickRectangleBorder(renderer, back_rect.x, back_rect.y, back_rect.w, back_rect.h, 1);
+        TTF_Font* font = TTF_OpenFont(path_to_text.c_str(), 100);
+        int a, b;
+        std::string text = prompttext + inputtext;
+        TTF_SizeText(font, text.c_str(), &a, &b);
+        if (a / double(b) > 1.01 * text_rect.w / double(text_rect.h)) {
+            text_rect.h = b / double(a) * text_rect.w;
+        }
+        else if (a / double(b) < 0.99 * text_rect.w / double(text_rect.h)) {
+            text_rect.w = a / double(b) * text_rect.h;
+        }
+        text_rect.y = back_rect.y + 0.5 * back_rect.h - 0.5 * text_rect.h;
+        SDL_Surface* surface = TTF_RenderText_Blended(font, text.c_str(), { 255,255,255 });
+        SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+        SDL_FreeSurface(surface);
+        TTF_CloseFont(font);
+        SDL_RenderCopy(renderer, texture, nullptr, &text_rect);
+        SDL_DestroyTexture(texture);
+    }
+}
+// //————————————————————————————————————————————————————————————————————————————————————————————————————
 class Hovermessage {
 public:
     SDL_Rect back_rect;
@@ -707,7 +862,10 @@ private:
     
     void init_SDL();
     void load_textures();
-    void generate_stars();
+
+    void openold(int n);
+
+    void generate_stars(double n);
     void generate_nebula();
     void read(int number);
     void generate_opoints();
@@ -745,6 +903,7 @@ private:
 
 
 StarMap::StarMap(int w, int h) : width(w), height(h), running(true) {//屏幕初始化
+
     init_SDL();
     TTF_Init();
     load_textures();
@@ -849,6 +1008,8 @@ void StarMap::menu() {
     Button quitgame = Button(0.76 * width, 0.85 * height, 0.2 * width, 0.1 * height, 1, { 255,127,0,255 }, "Exit             ");
     Button returntostart= Button(0, 0, 0.1 * width, 0.1 * height, 0, { 255,127,0,255 }, "Return");
     Button createuni = Button(0, 0, 0.1 * width, 0.1 * height, 0, { 255,127,0,255 }, "Create Universe");
+    InputBox starnum = InputBox(0.4 * width, 0.7 * height + menuy, 0.2 * width, 0.1 * height,0,"num of star:");
+    starnum.inputtext = "5000";
     while (running) {
         current_time = SDL_GetTicks();
         deltatime = (current_time - last_time) / 1000.0;
@@ -869,6 +1030,7 @@ void StarMap::menu() {
                     quitgame.buttoncal(0.76 * width, 0.85 * height, 0.2 * width, 0.1 * height);
                     setting.buttoncal(0.52 * width, 0.85 * height, 0.2 * width, 0.1 * height);
                     returntostart.buttoncal(0, 0, 0.1 * width, 0.1 * height);
+                    starnum.cal(0.4 * width, 0.7 * height + menuy, 0.2 * width, 0.1 * height);
                 }
             }
             else if (event.type == SDL_MOUSEWHEEL&&(startold.state==1||startnew.state==1)) {//存档列滚动
@@ -895,7 +1057,17 @@ void StarMap::menu() {
         SDL_Rect menu_rect = { 0,0 ,width, height };
         SDL_RenderCopy(renderer, menuback, nullptr, &menu_rect);
 
-        startnew.buttoncal();//旧档
+        if (!startnew.toshow) {
+            SDL_Rect backgroundrect = { 0,0,width,height };
+
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_ADD);
+            SDL_SetRenderDrawColor(renderer, 100, 100, 100, 100);
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+            SDL_RenderFillRect(renderer, &backgroundrect);
+        }
+
+        startnew.buttoncal();//new档
         if (startnew.state == 1) {
             startnew.mouson = 0;
             startnew.buttoncal(0);
@@ -904,9 +1076,11 @@ void StarMap::menu() {
             setting.buttoncal(0);
             returntostart.buttoncal(1);
             createuni.buttoncal(0.4 * width, 0.5 * height + menuy, 0.2 * width, 0.1 * height, 1);
+            starnum.cal(0.4 * width, 0.7 * height + menuy, 0.2 * width, 0.1 * height,1);
             //存档按钮显示，判断，开
             if (createuni.buttoncal()) {
                 createuni.mouson = 0;
+                generate_stars(std::stoi(starnum.inputtext));
                 run(0);
                 createuni.state = 0;
                 startnew.state = 0;
@@ -916,6 +1090,8 @@ void StarMap::menu() {
                 setting.buttoncal(1);
                 quitgame.buttoncal(1);
                 returntostart.buttoncal(0);//退出存档后操作
+                createuni.buttoncal(0);
+                starnum.cal(0);
                 buttonofsaves.clear();
                 savenumber.clear();
                 i = 0;
@@ -943,6 +1119,8 @@ void StarMap::menu() {
                 quitgame.buttoncal(1);
                 returntostart.buttoncal(0);
                 createuni.buttoncal(0);
+                starnum.cal(0);
+
 
             }
         }
@@ -961,8 +1139,25 @@ void StarMap::menu() {
                 buttonofsaves[j].buttoncal((0.2 + 0.4 * (j % 2)) * width, (0.1 + 0.2 * (j / 2)) * height + menuy, 0.2 * width, 0.1 * height, 1);
                 buttonofsaves[j].drawbutton(renderer);
                 if (buttonofsaves[j].state) {
-                    run(savenumber[j]);
+                    openold(savenumber[j]);
                     buttonofsaves[j].state = 0;
+                    buttonofsaves.clear();
+                    savenumber.clear();
+                    i = 0;
+                    for (const auto& entry : fs::directory_iterator("save")) {
+                        if (entry.is_regular_file()) {
+                            std::string filename = entry.path().filename().string();
+
+                            if (filename.size() > 14 && filename.substr(filename.size() - 14) == "star_data.json") {
+                                std::string xValue = filename.substr(0, filename.size() - 14);
+                                Button abutton;
+                                abutton = Button((0.2 + 0.4 * (i % 2)) * width, (0.1 + 0.2 * (i / 2)) * height, 0.2 * width, 0.1 * height, 0, { 255,127,0,255 }, "StarSave" + xValue);
+                                buttonofsaves.push_back(abutton);
+                                savenumber.push_back(std::stoi(xValue));
+                                i++;
+                            }
+                        }
+                    }
                 }
             }
             if (returntostart.buttoncal()) {
@@ -990,6 +1185,7 @@ void StarMap::menu() {
         setting.drawbuttonup_text_left_and_line_down(renderer);
         quitgame.drawbuttonup_text_left_and_line_down(renderer);
         createuni.drawbuttonup_text_left_and_line_down(renderer);
+        starnum.draw(renderer);
         if (startnew.mouson) {
             hovermessage.cal(u8"aa启动\nsdhusdhuudh\nsh\naaaaaaaaaaaaaaaaaaaaaaaaaaa", height / 32.0, width, height);
         }
@@ -999,7 +1195,118 @@ void StarMap::menu() {
 
 
 }
-  
+
+void StarMap::openold(int n) {
+
+
+    Uint32 current_time = SDL_GetTicks();
+    Uint32 last_time = current_time;
+    double deltatime = (current_time - last_time) / 1000.0;
+    double startscroll_y = 0;//存档页面滚动目标
+    double menuy = 0;//存档页面滚动逼近
+
+    Button start = Button(0.4 * width, 0.5 * height + menuy, 0.2 * width, 0.1 * height, 1, { 255,127,0,255 }, "IntoUniverse");
+    Button returntoolds = Button(0, 0, 0.1 * width, 0.1 * height, 1, { 255,127,0,255 }, "Return");
+    Button deletetheworld = Button(0.4 * width, 0.7 * height + menuy, 0.2 * width, 0.1 * height, 1, { 255,127,0,255 }, "deletetheworld");
+    Button realdel(0.4 * width, 0.5 * height, 0.2 * width, 0.1 * height, 0, { 255,127,0,255 }, "Delete!");
+    Button dontdel(0.4 * width, 0.7 * height, 0.2 * width, 0.1 * height, 0, { 255,127,0,255 }, "return");
+    while (!returntoolds.state&&!realdel.state) {
+        current_time = SDL_GetTicks();
+        deltatime = (current_time - last_time) / 1000.0;
+        last_time = current_time;
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+
+            if (event.type == SDL_QUIT) {
+                running = false;
+            }
+            else if (event.type == SDL_WINDOWEVENT) {
+                if (event.window.event == SDL_WINDOWEVENT_RESIZED) {//更新按钮位置
+                    width = event.window.data1;
+                    height = event.window.data2;
+                    SDL_RenderSetLogicalSize(renderer, width, height);
+                    start.buttoncal(0.4 * width, 0.5 * height + menuy, 0.2 * width, 0.1 * height, 1);
+                    returntoolds.buttoncal(0, 0, 0.1 * width, 0.1 * height,1);
+                    deletetheworld.buttoncal(0.4 * width, 0.7 * height + menuy, 0.2 * width, 0.1 * height, 1);
+                    realdel.buttoncal(0.4 * width, 0.5 * height, 0.2 * width, 0.1 * height);
+                    dontdel.buttoncal(0.4 * width, 0.7 * height, 0.2 * width, 0.1 * height);
+                }
+            }
+            else if (event.type == SDL_MOUSEWHEEL) {//存档列滚动
+                if (event.wheel.y > 0) {
+                    if (startscroll_y < 0) {
+                        startscroll_y += static_cast<int>(height / 32.0);
+                    }
+                    else {
+                        startscroll_y = 0;
+                    }
+                }
+                else if (event.wheel.y < 0) {
+                    startscroll_y -= static_cast<int>(height / 32.0);
+                }
+            }
+        }
+        menuy += (startscroll_y - menuy) * variable_threshold1(18 * deltatime);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderClear(renderer);
+        SDL_Rect menu_rect = { 0,0 ,width, height };
+        SDL_RenderCopy(renderer, menuback, nullptr, &menu_rect);
+
+
+        SDL_Rect backgroundrect = { 0,0,width,height };
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_ADD);
+        SDL_SetRenderDrawColor(renderer, 100, 100, 100, 100);
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+        SDL_RenderFillRect(renderer, &backgroundrect);
+        start.buttoncal(0.4 * width, 0.5 * height + menuy, 0.2 * width, 0.1 * height);
+        returntoolds.buttoncal(0, 0, 0.1 * width, 0.1 * height);
+        deletetheworld.buttoncal(0.4 * width, 0.7 * height + menuy, 0.2 * width, 0.1 * height);
+        if (start.state == 1) {
+            run(n);
+            returntoolds.state = 1;
+        }
+        if (deletetheworld.buttoncal(0.4 * width, 0.7 * height + menuy, 0.2 * width, 0.1 * height)) {
+            SDL_Rect backgroundrect = { 0,0,width,height };
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_ADD);
+            SDL_SetRenderDrawColor(renderer, 100, 100, 100, 100);
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+            SDL_RenderFillRect(renderer, &backgroundrect);
+            start.buttoncal(0);
+            returntoolds.buttoncal(0);
+            deletetheworld.buttoncal(0);
+            realdel.buttoncal(0.4 * width, 0.5 * height, 0.2 * width, 0.1 * height,1);
+            dontdel.buttoncal(0.4 * width, 0.7 * height, 0.2 * width, 0.1 * height,1);
+            if (realdel.mouson) {
+                hovermessage.cal(u8"存档" + std::to_string(n) + u8"将被永久删除\n下一个庞加莱回归见。", height / 32.0, width, height);
+            }
+            if(realdel.buttoncal(0.4 * width, 0.5 * height, 0.2 * width, 0.1 * height, 1)) {
+                std::string filepath = "save/" + std::to_string(n) + "star_data.json";
+                std::remove(filepath.c_str());
+            }
+            if (dontdel.buttoncal(0.4 * width, 0.7 * height, 0.2 * width, 0.1 * height, 1)) {
+                deletetheworld.state = 0;
+                
+                dontdel.state = 0;
+                realdel.buttoncal(0);
+                dontdel.buttoncal(0);
+                start.buttoncal(1);
+                returntoolds.buttoncal(1);
+                deletetheworld.buttoncal(1);
+            }
+
+        }
+        returntoolds.drawbutton(renderer);
+        start.drawbuttonup_text_left_and_line_down(renderer);
+        deletetheworld.drawbuttonup_text_left_and_line_down(renderer);
+        realdel.drawbuttonup_text_left_and_line_down(renderer);
+        dontdel.drawbuttonup_text_left_and_line_down(renderer);
+
+        hovermessage.draw(renderer, height / 32.0);
+        SDL_RenderPresent(renderer);
+    }
+
+
+}
 
 static void drawDashedLine(SDL_Renderer* renderer, int x1, int y1, int x2, int y2, double dashLength) {
 
@@ -1078,7 +1385,42 @@ void StarMap::init_SDL() {
         throw std::runtime_error("SDL could not initialize! SDL_Error: " + std::string(SDL_GetError()));
     }
 
-    window = SDL_CreateWindow("Star Map", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);//创建窗口
+    int displayCount = SDL_GetNumVideoDisplays();
+    if (displayCount < 1) {
+        printf("No displays found.\n");
+        SDL_Quit();
+    }
+
+    // 查找分辨率最高的显示器
+    SDL_DisplayMode highestMode;
+    SDL_zero(highestMode); // 初始化
+    highestMode.w = 0;     // 设置为最低值以便比较
+
+    for (int i = 0; i < displayCount; i++) {
+        SDL_DisplayMode mode;
+        if (SDL_GetCurrentDisplayMode(i, &mode) == 0) {
+            if (mode.w * mode.h > highestMode.w * highestMode.h) {
+                highestMode = mode;
+            }
+        }
+        else {
+            printf("SDL_GetCurrentDisplayMode Error: %s\n", SDL_GetError());
+        }
+    }
+
+    // 创建无边框全屏窗口
+    SDL_Window* window = SDL_CreateWindow(
+        "SDL2 Fullscreen Borderless Window", // 窗口标题
+        SDL_WINDOWPOS_UNDEFINED_DISPLAY(0),  // X 位置
+        SDL_WINDOWPOS_UNDEFINED_DISPLAY(0),  // Y 位置
+        highestMode.w,                       // 宽度
+        highestMode.h,                       // 高度
+        SDL_WINDOW_FULLSCREEN |              // 全屏标志
+        SDL_WINDOW_BORDERLESS                // 无边框标志
+    );
+    width = highestMode.w;
+    height = highestMode.h;
+
     if (window == nullptr) {
         throw std::runtime_error("Window could not be created! SDL_Error: " + std::string(SDL_GetError()));//renderer
     }
@@ -1089,7 +1431,7 @@ void StarMap::init_SDL() {
     }
 
     if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
-        throw std::runtime_error("SDL_image could not initialize! SDL_image Error: " + std::string(IMG_GetError()));
+        throw std::runtime_error("SDL_image could not initialize! SDL_image Error: " + std::string(IMG_GetError()));    
     }
 }
 
@@ -1241,10 +1583,10 @@ bool StarMap::save(int number) {
     return 1;
 }
 
-void StarMap::generate_stars() {//生成，可能无误
-    const int nstar0 = 3125;
+void StarMap::generate_stars(double n) {//生成，可能无误
+    const int nstar0 = n;
     const double stardensity = 0.004;
-    const double rmap0 = std::pow(nstar0 * 6 / (stardensity * PI), 1.0/3) / 2;
+    const double rmap0 = std::pow(nstar0 * 3 / (stardensity *4* PI), 1.0/3) ;
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -1253,10 +1595,10 @@ void StarMap::generate_stars() {//生成，可能无误
     std::uniform_real_distribution<> power_dis(0, 1);
     std::uniform_int_distribution<> type_dis(0, 4);
     std::uniform_real_distribution<> radius_dis(-3.3, -1);
-    std::cout << std::ceil(nstar0 * 6 / PI) << std::endl;
+    std::cout << nstar0<< std::endl;
     std::cout << rmap0 << std::endl;
     int nnn = 0;
-    for (int i = 0; i < std::ceil(nstar0 * 6 / PI); i++) {
+    for (int i = 0; i < nstar0; i++) {
         double xstar0 = dis(gen);
         double ystar0 = dis(gen);
         double zstar0 = dis(gen);
@@ -1392,7 +1734,7 @@ void StarMap::generate_opoints() {
 
 void StarMap::run(int number) {//主循环，可能完善
     if (number == 0) {
-        generate_stars();
+      //  generate_stars();
         generate_nebula();
     }
     else {
@@ -2025,7 +2367,7 @@ void StarMap::draw_stars() {
             SDL_Color color = ScaleSDLColor(pow(star.power, 1.0 / 8.0) / 8.0 / (variable_threshold001(100 * (star.distance)) / 100), kelvin_to_rgb(star.temperature));
             SDL_Color color0 = kelvin_to_rgb(star.temperature);
             double  starrad = width / sqrt(variable_threshold001(pow((star.distance / star.radius), 2) - 1));
-            double ll = 50 / pow(variable_threshold001(10000 * (star.distance)) / 10000, 0.8) * pow(star.power, 1 / 7.0)*width/ 1920 ;
+            double ll = 70 / pow(variable_threshold001(10000 * (star.distance)) / 10000, 1) * pow(star.power, 1 / 7.0)*width/ 1920 ;
 
             if (starrad >= 1) {
                 drawFilledCircle(renderer, star.screen_pos.x, star.screen_pos.y, int(starrad), color0); //恒星本体，原色
