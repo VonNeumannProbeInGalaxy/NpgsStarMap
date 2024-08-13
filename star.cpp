@@ -26,21 +26,21 @@ struct Vec3 {
 };
 
 struct Star {//星星所有数据
-    int number;
-    Vec3 absolute_pos;
-    Vec3 relative_pos;
-    double distance;
-    double depth;
-    SDL_Point screen_pos;
-    double temperature;//星云色相存储于此，使用不同于恒星函数将其转换为颜色
-    double power;
-    int dysondensity;
-    double radius;
-    std::string teamname;
-    bool needtoshowpos;
-    SDL_Point zpoint;
-    double zpdep;
-    int type;//0恒星，1星云
+    int number;//编号，不是天文学命名，就是编号，每个恒星唯一
+    Vec3 absolute_pos;//绝对坐标
+    Vec3 relative_pos;//可视化中间量，不能去掉
+    double distance;//可视化中间量，不能去掉
+    double depth;//可视化中间量，不能去掉
+    SDL_Point screen_pos;//可视化中间量，不能去掉
+    double temperature;//温度，开尔文
+    double power;//功率，倍太阳
+    int dysondensity;//戴森云等级
+    double radius;//恒星半径，光年
+    std::string teamname;//所在阵营名，考虑换成int，把队名存在一个词典里
+    bool needtoshowpos;//是否显示垂线，不能去掉
+    SDL_Point zpoint;//垂线相关，不能去掉
+    double zpdep;//垂线相关，不能去掉
+    int type;//0恒星，1星云（现在这俩共用一个struct
 
 };
 
@@ -455,7 +455,7 @@ void Button::drawbutton(SDL_Renderer* renderer) {
         }
         SDL_RenderDrawRect(renderer, &button_rect);
         drawThickRectangleBorder(renderer, button_rect.x, button_rect.y, button_rect.w, button_rect.h, 0.01*button_rect.w);
-        TTF_Font* font = TTF_OpenFont(path_to_text.c_str(), 100);
+        TTF_Font* font = TTF_OpenFont(path_to_text.c_str(), 500);
         int a, b;
         TTF_SizeText(font, text.c_str(), &a, &b);
         if (a / double(b) >1.01* text_rect.w / double(text_rect.h)) {
@@ -492,7 +492,7 @@ void Button::drawbuttonup(SDL_Renderer* renderer) {
         }
         SDL_Rect line_rect = { button_rect.x, button_rect.y, button_rect.w, 0.05*button_rect.h };
         SDL_RenderFillRect(renderer, &line_rect);
-        TTF_Font* font = TTF_OpenFont(path_to_text.c_str(), 100);
+        TTF_Font* font = TTF_OpenFont(path_to_text.c_str(), 500);
         int a, b;
         TTF_SizeText(font, text.c_str(), &a, &b);
         if (a / double(b) > 1.01 * text_rect.w / double(text_rect.h)) {
@@ -529,7 +529,7 @@ void Button::drawbuttonup_text_left_and_line_down(SDL_Renderer* renderer) {
         }
         SDL_Rect line_rect = { button_rect.x, button_rect.y+0.2 * button_rect.h, button_rect.w, 2 };
         SDL_RenderFillRect(renderer, &line_rect);
-        TTF_Font* font = TTF_OpenFont(path_to_text.c_str(), 100);
+        TTF_Font* font = TTF_OpenFont(path_to_text.c_str(), 500);
        // TTF_SetFontHinting(font, TTF_HINTING_NORMAL);
         int a, b;
         TTF_SizeText(font, text.c_str(), &a, &b);
@@ -683,7 +683,7 @@ void InputBox::draw(SDL_Renderer* renderer){
         }
         SDL_RenderDrawRect(renderer, &back_rect);
         drawThickRectangleBorder(renderer, back_rect.x, back_rect.y, back_rect.w, back_rect.h, 1);
-        TTF_Font* font = TTF_OpenFont(path_to_text.c_str(), 100);
+        TTF_Font* font = TTF_OpenFont(path_to_text.c_str(), 300);
         int a, b;
         std::string text = prompttext + inputtext;
         TTF_SizeText(font, text.c_str(), &a, &b);
@@ -867,7 +867,7 @@ private:
 
     void generate_stars(double n);
     void generate_nebula();
-    void read(int number);
+    bool read(int number);
     void generate_opoints();
     void handle_events();
     void update();
@@ -1385,41 +1385,37 @@ void StarMap::init_SDL() {
         throw std::runtime_error("SDL could not initialize! SDL_Error: " + std::string(SDL_GetError()));
     }
 
-    int displayCount = SDL_GetNumVideoDisplays();
-    if (displayCount < 1) {
-        printf("No displays found.\n");
+    int numDisplays = SDL_GetNumVideoDisplays();
+    if (numDisplays < 1) {
+        std::cerr << "No displays found" << std::endl;
         SDL_Quit();
     }
 
-    // 查找分辨率最高的显示器
-    SDL_DisplayMode highestMode;
-    SDL_zero(highestMode); // 初始化
-    highestMode.w = 0;     // 设置为最低值以便比较
+    SDL_Rect largestDisplayRect{};
+    int largestDisplayArea = 0;
 
-    for (int i = 0; i < displayCount; i++) {
-        SDL_DisplayMode mode;
-        if (SDL_GetCurrentDisplayMode(i, &mode) == 0) {
-            if (mode.w * mode.h > highestMode.w * highestMode.h) {
-                highestMode = mode;
-            }
+    for (int i = 0; i < numDisplays; ++i) {
+        SDL_Rect displayRect;
+        if (SDL_GetDisplayBounds(i, &displayRect) != 0) {
+            std::cerr << "SDL_GetDisplayBounds Error: " << SDL_GetError() << std::endl;
+            SDL_Quit();
         }
-        else {
-            printf("SDL_GetCurrentDisplayMode Error: %s\n", SDL_GetError());
+
+        int area = displayRect.w * displayRect.h;
+        if (area > largestDisplayArea) {
+            largestDisplayArea = area;
+            largestDisplayRect = displayRect;
         }
     }
 
-    // 创建无边框全屏窗口
-    SDL_Window* window = SDL_CreateWindow(
-        "SDL2 Fullscreen Borderless Window", // 窗口标题
-        SDL_WINDOWPOS_UNDEFINED_DISPLAY(0),  // X 位置
-        SDL_WINDOWPOS_UNDEFINED_DISPLAY(0),  // Y 位置
-        highestMode.w,                       // 宽度
-        highestMode.h,                       // 高度
-        SDL_WINDOW_FULLSCREEN |              // 全屏标志
-        SDL_WINDOW_BORDERLESS                // 无边框标志
-    );
-    width = highestMode.w;
-    height = highestMode.h;
+    SDL_Window* window = SDL_CreateWindow("VNPGS",
+        largestDisplayRect.x,
+        largestDisplayRect.y,
+        largestDisplayRect.w,
+        largestDisplayRect.h,
+        SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS);
+    width = largestDisplayRect.w;
+    height = largestDisplayRect.h;
 
     if (window == nullptr) {
         throw std::runtime_error("Window could not be created! SDL_Error: " + std::string(SDL_GetError()));//renderer
@@ -1431,7 +1427,7 @@ void StarMap::init_SDL() {
     }
 
     if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
-        throw std::runtime_error("SDL_image could not initialize! SDL_image Error: " + std::string(IMG_GetError()));    
+        throw std::runtime_error("SDL_image could not initialize! SDL_image Error: " + std::string(SDL_GetError()));
     }
 }
 
@@ -1733,37 +1729,39 @@ void StarMap::generate_opoints() {
 }
 
 void StarMap::run(int number) {//主循环，可能完善
+    int a = 0;
     if (number == 0) {
       //  generate_stars();
         generate_nebula();
     }
     else {
-        read(number);
+        a=read(number);
     }
+    if(a==0)
+    {
+        Uint32 current_time = SDL_GetTicks();
+        deltatime = (current_time - last_time) / 1000.0;
+        last_time = current_time;
 
-    Uint32 current_time = SDL_GetTicks();
-    deltatime = (current_time - last_time) / 1000.0;
-    last_time = current_time;
+        while (running && !ifsave) {
 
-    while (running && !ifsave) {
 
-        
 
-        handle_events();
-        
-        update();
-        
-        
-        render();
-        if (ifexit) {
-            ifsave = save(number);
+            handle_events();
+
+            update();
+
+
+            render();
+            if (ifexit) {
+                ifsave = save(number);
+            }
         }
     }
- 
     cleanup();
 }
 
-void StarMap::read(int number) {
+bool StarMap::read(int number) {
     std::string filepath = "save/"+std::to_string(number) + "star_data.json";
     std::ifstream file(filepath);
 
@@ -1772,81 +1770,88 @@ void StarMap::read(int number) {
     }
     json j;
     file >> j;
+    try {
+        for (const auto& star_json : j["stars"]) {
+            Star star;
 
-    for (const auto& star_json : j["stars"]) {
-        Star star;
+            // Read star properties from JSON object
+            star.number = star_json["name"];
+            star.absolute_pos.x = star_json["absolute_pos"]["x"];
+            star.absolute_pos.y = star_json["absolute_pos"]["y"];
+            star.absolute_pos.z = star_json["absolute_pos"]["z"];
+            star.temperature = star_json["temperature"];
+            star.power = star_json["power"];
+            star.dysondensity = star_json["dysondensity"];
+            star.radius = star_json["radius"];
+            star.teamname = star_json["teamname"];
+            star.needtoshowpos = star_json["needtoshowpos"];
+            star.type = star_json["type"];
 
-        // Read star properties from JSON object
-        star.number = star_json["name"];
-        star.absolute_pos.x = star_json["absolute_pos"]["x"];
-        star.absolute_pos.y = star_json["absolute_pos"]["y"];
-        star.absolute_pos.z = star_json["absolute_pos"]["z"];
-        star.temperature = star_json["temperature"];
-        star.power = star_json["power"];
-        star.dysondensity = star_json["dysondensity"];
-        star.radius = star_json["radius"];
-        star.teamname = star_json["teamname"];
-        star.needtoshowpos = star_json["needtoshowpos"];
-        star.type = star_json["type"];
-
-        // Add star to vector
-        stars.push_back(star);
-    }
-    for (auto& route_json : j["routes"]) {
-        Route route;
-
-        route.show = route_json["show"];
-
-        route.origin.number = route_json["origin"]["name"];
-        route.origin.absolute_pos.x = route_json["origin"]["absolute_pos"]["x"];
-        route.origin.absolute_pos.y = route_json["origin"]["absolute_pos"]["y"];
-        route.origin.absolute_pos.z = route_json["origin"]["absolute_pos"]["z"];
-        route.origin.temperature = route_json["origin"]["temperature"];
-        route.origin.power = route_json["origin"]["power"];
-        route.origin.dysondensity = route_json["origin"]["dysondensity"];
-        route.origin.radius = route_json["origin"]["radius"];
-        route.origin.teamname = route_json["origin"]["teamname"];
-        route.origin.needtoshowpos = route_json["origin"]["needtoshowpos"];
-        route.origin.type = route_json["origin"]["type"];
-
-
-        route.destin.number = route_json["destin"]["name"];
-        route.destin.absolute_pos.x = route_json["destin"]["absolute_pos"]["x"];
-        route.destin.absolute_pos.y = route_json["destin"]["absolute_pos"]["y"];
-        route.destin.absolute_pos.z = route_json["destin"]["absolute_pos"]["z"];
-        route.destin.temperature = route_json["destin"]["temperature"];
-        route.destin.power = route_json["destin"]["power"];
-        route.destin.dysondensity = route_json["destin"]["dysondensity"];
-        route.destin.radius = route_json["destin"]["radius"];
-        route.destin.teamname = route_json["destin"]["teamname"];
-        route.destin.needtoshowpos = route_json["destin"]["needtoshowpos"];
-        route.destin.type = route_json["destin"]["type"];
-        for (auto& ship_json : route_json["ships"]) {
-            Starship ship;
-            ship.number = ship_json["number"];
-            ship.category = ship_json["category"];
-            ship.loadmess = ship_json["loadmess"];
-            ship.dir = ship_json["dir"];
-            ship.fuelmess = ship_json["fuelmess"];
-            ship.volatilesmess = ship_json["volatilesmess"];
-            ship.starttime = ship_json["starttime"];
-            ship.endtime = ship_json["endtime"];
-            ship.v = ship_json["v"];
-
-            route.ships.push_back(ship);
+            // Add star to vector
+            stars.push_back(star);
         }
+        for (auto& route_json : j["routes"]) {
+            Route route;
 
-        routes.push_back(route);
+            route.show = route_json["show"];
+
+            route.origin.number = route_json["origin"]["name"];
+            route.origin.absolute_pos.x = route_json["origin"]["absolute_pos"]["x"];
+            route.origin.absolute_pos.y = route_json["origin"]["absolute_pos"]["y"];
+            route.origin.absolute_pos.z = route_json["origin"]["absolute_pos"]["z"];
+            route.origin.temperature = route_json["origin"]["temperature"];
+            route.origin.power = route_json["origin"]["power"];
+            route.origin.dysondensity = route_json["origin"]["dysondensity"];
+            route.origin.radius = route_json["origin"]["radius"];
+            route.origin.teamname = route_json["origin"]["teamname"];
+            route.origin.needtoshowpos = route_json["origin"]["needtoshowpos"];
+            route.origin.type = route_json["origin"]["type"];
+
+
+            route.destin.number = route_json["destin"]["name"];
+            route.destin.absolute_pos.x = route_json["destin"]["absolute_pos"]["x"];
+            route.destin.absolute_pos.y = route_json["destin"]["absolute_pos"]["y"];
+            route.destin.absolute_pos.z = route_json["destin"]["absolute_pos"]["z"];
+            route.destin.temperature = route_json["destin"]["temperature"];
+            route.destin.power = route_json["destin"]["power"];
+            route.destin.dysondensity = route_json["destin"]["dysondensity"];
+            route.destin.radius = route_json["destin"]["radius"];
+            route.destin.teamname = route_json["destin"]["teamname"];
+            route.destin.needtoshowpos = route_json["destin"]["needtoshowpos"];
+            route.destin.type = route_json["destin"]["type"];
+            for (auto& ship_json : route_json["ships"]) {
+                Starship ship;
+                ship.number = ship_json["number"];
+                ship.category = ship_json["category"];
+                ship.loadmess = ship_json["loadmess"];
+                ship.dir = ship_json["dir"];
+                ship.fuelmess = ship_json["fuelmess"];
+                ship.volatilesmess = ship_json["volatilesmess"];
+                ship.starttime = ship_json["starttime"];
+                ship.endtime = ship_json["endtime"];
+                ship.v = ship_json["v"];
+
+                route.ships.push_back(ship);
+            }
+
+            routes.push_back(route);
+        }
+        timeingame = j["timeingame"];
+        cenposcam.x = j["cenposcam"]["x"];
+        cenposcam.y = j["cenposcam"]["y"];
+        cenposcam.z = j["cenposcam"]["z"];
+        posx = j["posx"] * width;
+        posy = j["posy"] * height;
+        r = j["r"];
+        rtarget = j["rtarget"];
+        file.close();
     }
-    timeingame = j["timeingame"];
-    cenposcam.x = j["cenposcam"]["x"];
-    cenposcam.y = j["cenposcam"]["y"];
-    cenposcam.z = j["cenposcam"]["z"];
-    posx= j["posx"]*width;
-    posy = j["posy"]*height;
-    r = j["r"];
-    rtarget = j["rtarget"];
-    file.close();
+    catch (const json::type_error& e) {
+        std::cerr << "JSON type error: " << e.what() << std::endl;
+        return 1;
+    }
+    return 0;
+
 }
 
 void StarMap::handle_events() {//鼠标事件，可能完善
