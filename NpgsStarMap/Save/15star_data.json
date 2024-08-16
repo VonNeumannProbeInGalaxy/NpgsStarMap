@@ -1,0 +1,857 @@
+{
+    "cenposcam": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    },
+    "posx": 0.0,
+    "posy": 0.0,
+    "r": 13.8888888888889,
+    "routes": [
+        {
+            "destin": {
+                "absolute_pos": {
+                    "x": 8.779851309329647,
+                    "y": -8.005555581718014,
+                    "z": 6.941459308811936
+                },
+                "dysondensity": 3,
+                "name": 26,
+                "needtoshowpos": false,
+                "power": 0.022876670307066995,
+                "radius": 8.51816632248044e-08,
+                "teamname": "em",
+                "temperature": 6442.915719107472,
+                "type": 0
+            },
+            "origin": {
+                "absolute_pos": {
+                    "x": 7.073971978540413,
+                    "y": 9.905604701227258,
+                    "z": -5.3158607111885114
+                },
+                "dysondensity": 4,
+                "name": 24,
+                "needtoshowpos": false,
+                "power": 51285.93684295405,
+                "radius": 1.7539569224899938e-07,
+                "teamname": "em",
+                "temperature": 4133.206394390039,
+                "type": 0
+            },
+            "ships": [
+                {
+                    "category": 1,
+                    "dir": true,
+                    "endtime": 1502557.4854284646,
+                    "fuelmess": 0.0,
+                    "loadmess": 0.0,
+                    "number": 1,
+                    "starttime": 0.0,
+                    "v": 1.4489068757640765e-05,
+                    "volatilesmess": 0.0
+                }
+            ],
+            "show": true
+        }
+    ],
+    "rtarget": 13.888888888888893,
+    "stars": [
+        {
+            "absolute_pos": {
+                "x": 8.217289495145977,
+                "y": -10.246693250023057,
+                "z": 0.08769979411235518
+            },
+            "dysondensity": 0,
+            "name": 0,
+            "needtoshowpos": false,
+            "power": 0.048054493224771254,
+            "radius": 6.153541465636013e-07,
+            "teamname": "em",
+            "temperature": 8192.599478479844,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": -7.031988430272621,
+                "y": -5.7666259936212025,
+                "z": -9.016831778561873
+            },
+            "dysondensity": 4,
+            "name": 1,
+            "needtoshowpos": false,
+            "power": 0.4881275098833287,
+            "radius": 6.784921661352649e-07,
+            "teamname": "fr",
+            "temperature": 2148.3981065576927,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": -3.171191276865308,
+                "y": -2.5058660516856612,
+                "z": 2.852746271051174
+            },
+            "dysondensity": 0,
+            "name": 2,
+            "needtoshowpos": false,
+            "power": 631776.9198647969,
+            "radius": 1.3087779662098206e-06,
+            "teamname": "em",
+            "temperature": 1231.9947131857728,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": -5.5605571003919945,
+                "y": -10.299448093020029,
+                "z": -6.517830948985113
+            },
+            "dysondensity": 0,
+            "name": 3,
+            "needtoshowpos": false,
+            "power": 0.011726748205955474,
+            "radius": 7.803200397810336e-08,
+            "teamname": "fr",
+            "temperature": 2184.053481560285,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": -5.428431546720004,
+                "y": 2.5313436475031033,
+                "z": 0.9605128040522342
+            },
+            "dysondensity": 0,
+            "name": 4,
+            "needtoshowpos": false,
+            "power": 4601008.768665237,
+            "radius": 1.1419964189026242e-07,
+            "teamname": "em",
+            "temperature": 7055.6034915951695,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": -7.431549200028111,
+                "y": 10.205427597106087,
+                "z": 0.09672467484810099
+            },
+            "dysondensity": 3,
+            "name": 5,
+            "needtoshowpos": false,
+            "power": 808180.1966609361,
+            "radius": 1.5649411663843201e-06,
+            "teamname": "fr",
+            "temperature": 4334.039509701817,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 0.7638069213845,
+                "y": -8.414192445279362,
+                "z": 1.4324871264518215
+            },
+            "dysondensity": 4,
+            "name": 6,
+            "needtoshowpos": false,
+            "power": 3841.28997883183,
+            "radius": 1.965817260070447e-08,
+            "teamname": "em",
+            "temperature": 6687.811484664246,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 7.4123775593803884,
+                "y": -2.8782016758960616,
+                "z": 8.456193256674613
+            },
+            "dysondensity": 0,
+            "name": 7,
+            "needtoshowpos": true,
+            "power": 61418.02679891093,
+            "radius": 4.216694656760136e-07,
+            "teamname": "fr",
+            "temperature": 5984.964990060878,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": -3.3563156316378766,
+                "y": 8.79999322852402,
+                "z": -4.333315687872737
+            },
+            "dysondensity": 2,
+            "name": 8,
+            "needtoshowpos": false,
+            "power": 431835.317709608,
+            "radius": 1.0063126021378554e-06,
+            "teamname": "em",
+            "temperature": 4860.692430862254,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 0.8801805026054286,
+                "y": -3.473829590447057,
+                "z": 10.90753609468463
+            },
+            "dysondensity": 3,
+            "name": 9,
+            "needtoshowpos": false,
+            "power": 154403.16989436757,
+            "radius": 5.346067837327004e-07,
+            "teamname": "fr",
+            "temperature": 1596.8058150887246,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 3.541849620091593,
+                "y": -7.064993642922846,
+                "z": -10.732088064797503
+            },
+            "dysondensity": 3,
+            "name": 10,
+            "needtoshowpos": false,
+            "power": 0.024841268629522146,
+            "radius": 6.596360800532747e-07,
+            "teamname": "em",
+            "temperature": 1224.99075192035,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": -4.2989983402370004,
+                "y": -11.338166673031488,
+                "z": 0.9420956581812909
+            },
+            "dysondensity": 0,
+            "name": 11,
+            "needtoshowpos": false,
+            "power": 6.273030060915519,
+            "radius": 6.782838942767714e-08,
+            "teamname": "fr",
+            "temperature": 8733.251597241095,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 7.64641212373424,
+                "y": -1.0408739123346695,
+                "z": 0.44865339614358923
+            },
+            "dysondensity": 4,
+            "name": 12,
+            "needtoshowpos": false,
+            "power": 0.11020452625429994,
+            "radius": 3.607696010064919e-08,
+            "teamname": "em",
+            "temperature": 10654.06658918009,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 4.792534141037741,
+                "y": 2.971812897960188,
+                "z": 2.3677626890418217
+            },
+            "dysondensity": 2,
+            "name": 13,
+            "needtoshowpos": false,
+            "power": 2654.534652290709,
+            "radius": 1.1353260314518615e-07,
+            "teamname": "fr",
+            "temperature": 9121.638304261482,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": -1.5519988459291127,
+                "y": -2.6050775534037864,
+                "z": 1.704039113776382
+            },
+            "dysondensity": 4,
+            "name": 14,
+            "needtoshowpos": false,
+            "power": 61729.70688839527,
+            "radius": 7.460980490818606e-08,
+            "teamname": "em",
+            "temperature": 9272.87861766665,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 0.3076671252118235,
+                "y": 2.1130080485271883,
+                "z": -12.267745345116284
+            },
+            "dysondensity": 4,
+            "name": 15,
+            "needtoshowpos": false,
+            "power": 30.19248396122411,
+            "radius": 1.0813231001212354e-08,
+            "teamname": "fr",
+            "temperature": 10478.591249978439,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 6.648247872330661,
+                "y": -2.777686197405103,
+                "z": -6.15494571665889
+            },
+            "dysondensity": 4,
+            "name": 16,
+            "needtoshowpos": true,
+            "power": 276614.259956309,
+            "radius": 3.5369214407044406e-07,
+            "teamname": "em",
+            "temperature": 4109.036812121587,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": -6.996138154273138,
+                "y": 0.7393505801262545,
+                "z": 1.1613454839734683
+            },
+            "dysondensity": 4,
+            "name": 17,
+            "needtoshowpos": false,
+            "power": 0.6044331554450283,
+            "radius": 1.4604997170623922e-06,
+            "teamname": "fr",
+            "temperature": 1970.4201456476922,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 2.4768456571820323,
+                "y": -1.2504864293521845,
+                "z": 12.832574132356097
+            },
+            "dysondensity": 2,
+            "name": 18,
+            "needtoshowpos": false,
+            "power": 0.0015375833070755953,
+            "radius": 4.414350708849912e-08,
+            "teamname": "em",
+            "temperature": 9649.550602082612,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 4.536183700744758,
+                "y": 4.659758213274191,
+                "z": 4.73277457423319
+            },
+            "dysondensity": 1,
+            "name": 19,
+            "needtoshowpos": false,
+            "power": 1.948499622800466,
+            "radius": 3.8253592024101153e-07,
+            "teamname": "fr",
+            "temperature": 4957.033068062679,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 0.9456852158836746,
+                "y": -12.283390890408045,
+                "z": -4.6032270635032475
+            },
+            "dysondensity": 3,
+            "name": 20,
+            "needtoshowpos": false,
+            "power": 4930485.664072588,
+            "radius": 8.541931804265284e-07,
+            "teamname": "em",
+            "temperature": 1849.0662692893825,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": -8.155853468502222,
+                "y": -6.6161637866773635,
+                "z": 7.986602656351398
+            },
+            "dysondensity": 3,
+            "name": 21,
+            "needtoshowpos": false,
+            "power": 1338.9958419216143,
+            "radius": 3.71691036024389e-08,
+            "teamname": "fr",
+            "temperature": 8732.815508537207,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 2.589544966327903,
+                "y": -2.488220013195363,
+                "z": -3.148208147947887
+            },
+            "dysondensity": 0,
+            "name": 22,
+            "needtoshowpos": false,
+            "power": 9.277456376652836,
+            "radius": 2.466317236672795e-07,
+            "teamname": "em",
+            "temperature": 5170.101291195824,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": -11.295582500377662,
+                "y": -0.6848979657594221,
+                "z": 6.746646496977352
+            },
+            "dysondensity": 1,
+            "name": 23,
+            "needtoshowpos": false,
+            "power": 111.66474363535843,
+            "radius": 4.6568038129025514e-08,
+            "teamname": "fr",
+            "temperature": 5007.2729951965985,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 7.073971978540413,
+                "y": 9.905604701227258,
+                "z": -5.3158607111885114
+            },
+            "dysondensity": 4,
+            "name": 24,
+            "needtoshowpos": false,
+            "power": 51285.93684295405,
+            "radius": 1.7539569224899938e-07,
+            "teamname": "em",
+            "temperature": 4133.206394390039,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": -4.800116837691965,
+                "y": -4.789978083194558,
+                "z": -7.992553093797688
+            },
+            "dysondensity": 0,
+            "name": 25,
+            "needtoshowpos": false,
+            "power": 908.1575887444408,
+            "radius": 1.1070971759973567e-08,
+            "teamname": "fr",
+            "temperature": 4704.298328085597,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 8.779851309329647,
+                "y": -8.005555581718014,
+                "z": 6.941459308811936
+            },
+            "dysondensity": 3,
+            "name": 26,
+            "needtoshowpos": false,
+            "power": 0.022876670307066995,
+            "radius": 8.51816632248044e-08,
+            "teamname": "em",
+            "temperature": 6442.915719107472,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 4.2734223229088,
+                "y": 7.288342006121496,
+                "z": -11.13779855372922
+            },
+            "dysondensity": 1,
+            "name": 27,
+            "needtoshowpos": false,
+            "power": 0.19365481754007555,
+            "radius": 2.1183314689687018e-07,
+            "teamname": "fr",
+            "temperature": 8013.661290982555,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 4.491738304864775,
+                "y": -4.248371032646935,
+                "z": -1.809718145279323
+            },
+            "dysondensity": 2,
+            "name": 28,
+            "needtoshowpos": false,
+            "power": 883.560889819122,
+            "radius": 3.4996845109907797e-07,
+            "teamname": "em",
+            "temperature": 5490.908110388024,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 2.189351580210218,
+                "y": -1.3468229391711812,
+                "z": -3.330025664352897
+            },
+            "dysondensity": 3,
+            "name": 29,
+            "needtoshowpos": false,
+            "power": 182585.98092142807,
+            "radius": 2.4165054850180435e-08,
+            "teamname": "fr",
+            "temperature": 8281.71870182302,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 5.221604009613671,
+                "y": 5.147445744025099,
+                "z": 12.018566701652816
+            },
+            "dysondensity": 1,
+            "name": 30,
+            "needtoshowpos": false,
+            "power": 6949.274705681225,
+            "radius": 6.937835866307456e-07,
+            "teamname": "em",
+            "temperature": 6826.46076794344,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": -2.4565411546099796,
+                "y": 5.324773415745845,
+                "z": -9.454984847218075
+            },
+            "dysondensity": 3,
+            "name": 31,
+            "needtoshowpos": false,
+            "power": 7.644028153028091,
+            "radius": 1.4903956766574957e-08,
+            "teamname": "fr",
+            "temperature": 4224.063018092508,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 4.145941238369428,
+                "y": -3.437570861222275,
+                "z": 7.752962332105156
+            },
+            "dysondensity": 1,
+            "name": 32,
+            "needtoshowpos": false,
+            "power": 252.48343586812257,
+            "radius": 3.899018026884046e-08,
+            "teamname": "em",
+            "temperature": 11613.253851025998,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": -2.058043318927398,
+                "y": 6.780644038452305,
+                "z": -6.6886532975396475
+            },
+            "dysondensity": 0,
+            "name": 33,
+            "needtoshowpos": false,
+            "power": 0.04002034602330082,
+            "radius": 8.523256968624859e-08,
+            "teamname": "fr",
+            "temperature": 1679.1251600539886,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 6.355584250502414,
+                "y": -1.541862440567133,
+                "z": -7.725482600474192
+            },
+            "dysondensity": 1,
+            "name": 34,
+            "needtoshowpos": false,
+            "power": 4.640060640761236,
+            "radius": 1.3276353125589257e-08,
+            "teamname": "em",
+            "temperature": 4543.122110552589,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 4.89583715962636,
+                "y": 9.58408127295434,
+                "z": -6.900024428643081
+            },
+            "dysondensity": 0,
+            "name": 35,
+            "needtoshowpos": false,
+            "power": 0.13377742633316844,
+            "radius": 1.0114585460896957e-07,
+            "teamname": "fr",
+            "temperature": 8137.166583182328,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 3.366885188956857,
+                "y": -5.822968518044043,
+                "z": -8.449922675752791
+            },
+            "dysondensity": 0,
+            "name": 36,
+            "needtoshowpos": false,
+            "power": 0.28005275075991515,
+            "radius": 4.231226407186457e-08,
+            "teamname": "em",
+            "temperature": 2629.610349788103,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": -4.452617662088253,
+                "y": -5.970053381478008,
+                "z": -5.012258120368875
+            },
+            "dysondensity": 1,
+            "name": 37,
+            "needtoshowpos": false,
+            "power": 0.1420650359613993,
+            "radius": 4.611406059042181e-08,
+            "teamname": "fr",
+            "temperature": 4485.148893154792,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 6.051958847327668,
+                "y": -1.8081811425672871,
+                "z": 1.2458842544417905
+            },
+            "dysondensity": 2,
+            "name": 38,
+            "needtoshowpos": false,
+            "power": 5075529.974595426,
+            "radius": 1.3417289835200772e-08,
+            "teamname": "em",
+            "temperature": 6457.248024824388,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": -4.46517375554888,
+                "y": -11.822274254631765,
+                "z": -3.0116880622630884
+            },
+            "dysondensity": 2,
+            "name": 39,
+            "needtoshowpos": false,
+            "power": 0.24893589475198516,
+            "radius": 3.8141918672387014e-08,
+            "teamname": "fr",
+            "temperature": 10257.243045753585,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 5.751293250774111,
+                "y": 11.421029675420925,
+                "z": 0.9035459513887112
+            },
+            "dysondensity": 1,
+            "name": 40,
+            "needtoshowpos": false,
+            "power": 15220.615139305124,
+            "radius": 6.063772129700002e-07,
+            "teamname": "em",
+            "temperature": 5687.744125830447,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": -0.1777384252391876,
+                "y": 6.3154113756029275,
+                "z": -4.35259318792046
+            },
+            "dysondensity": 3,
+            "name": 41,
+            "needtoshowpos": false,
+            "power": 2.9826599373034113,
+            "radius": 2.8959714058948296e-08,
+            "teamname": "fr",
+            "temperature": 5713.767193528773,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 11.0925908355611,
+                "y": -6.210459870066682,
+                "z": 6.190115923752121
+            },
+            "dysondensity": 4,
+            "name": 42,
+            "needtoshowpos": false,
+            "power": 0.13747729316908083,
+            "radius": 5.62152898029746e-07,
+            "teamname": "em",
+            "temperature": 10983.531339866935,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 7.79207625232084,
+                "y": 0.9244087923656021,
+                "z": 8.564511331174494
+            },
+            "dysondensity": 3,
+            "name": 43,
+            "needtoshowpos": false,
+            "power": 19577.18847389803,
+            "radius": 1.315648583971358e-06,
+            "teamname": "fr",
+            "temperature": 1907.2315506677191,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": -3.249082583619167,
+                "y": -5.130411640373582,
+                "z": 2.7948886949435803
+            },
+            "dysondensity": 3,
+            "name": 44,
+            "needtoshowpos": false,
+            "power": 4421309.516655975,
+            "radius": 6.779876728869107e-07,
+            "teamname": "em",
+            "temperature": 2906.1575322920035,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 9.645253598749232,
+                "y": 5.603733566909227,
+                "z": 0.5036662739767017
+            },
+            "dysondensity": 2,
+            "name": 45,
+            "needtoshowpos": false,
+            "power": 106716.97875815633,
+            "radius": 3.818044763155796e-08,
+            "teamname": "fr",
+            "temperature": 1663.701989435837,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": -12.017037577729766,
+                "y": -0.7829849297200919,
+                "z": 1.3171739293051044
+            },
+            "dysondensity": 2,
+            "name": 46,
+            "needtoshowpos": false,
+            "power": 1465.964903957817,
+            "radius": 1.0769962531320189e-06,
+            "teamname": "em",
+            "temperature": 6649.9123047670655,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": -1.1951914959420868,
+                "y": -1.9565413419003104,
+                "z": -10.595676764728763
+            },
+            "dysondensity": 0,
+            "name": 47,
+            "needtoshowpos": false,
+            "power": 1.1289461937073149,
+            "radius": 2.425637905345531e-07,
+            "teamname": "fr",
+            "temperature": 11969.723528366763,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 0.8604369566859518,
+                "y": -13.5549565754827,
+                "z": 0.47791943944919524
+            },
+            "dysondensity": 1,
+            "name": 48,
+            "needtoshowpos": true,
+            "power": 7442895.097708449,
+            "radius": 1.4238272241794204e-08,
+            "teamname": "em",
+            "temperature": 11426.838818849741,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": -1.611608960651452,
+                "y": -7.019465208258014,
+                "z": 2.8458082695405977
+            },
+            "dysondensity": 0,
+            "name": 49,
+            "needtoshowpos": false,
+            "power": 1263073.4600704657,
+            "radius": 5.426446424491847e-08,
+            "teamname": "fr",
+            "temperature": 11365.476309764903,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": -10.0
+            },
+            "dysondensity": 0,
+            "name": 114514,
+            "needtoshowpos": true,
+            "power": 9745236.655782772,
+            "radius": 1.6e-07,
+            "teamname": "fr",
+            "temperature": 7000.0,
+            "type": 0
+        },
+        {
+            "absolute_pos": {
+                "x": -28.170908573541183,
+                "y": 78.6871010526354,
+                "z": -37.222435147884546
+            },
+            "dysondensity": -1,
+            "name": 1919810,
+            "needtoshowpos": false,
+            "power": 0.0,
+            "radius": 8.253234348323398,
+            "teamname": "cl",
+            "temperature": 0.0,
+            "type": 1
+        },
+        {
+            "absolute_pos": {
+                "x": -61.93726535058661,
+                "y": 21.6458756873555,
+                "z": 3.3723321610755477
+            },
+            "dysondensity": -1,
+            "name": 1919811,
+            "needtoshowpos": false,
+            "power": 0.0,
+            "radius": 1.373234458471913,
+            "teamname": "cl",
+            "temperature": 0.0,
+            "type": 1
+        }
+    ],
+    "timeingame": 25915495664280.97
+}
