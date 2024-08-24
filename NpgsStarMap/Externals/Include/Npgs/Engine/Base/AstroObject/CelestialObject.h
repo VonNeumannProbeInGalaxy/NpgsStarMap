@@ -1,7 +1,8 @@
-﻿#pragma once
+#pragma once
 
 #include <string>
 #include <glm/glm.hpp>
+
 #include "Engine/Core/Base.h"
 
 _NPGS_BEGIN
@@ -31,10 +32,9 @@ public:
         std::string Name;                // 名字
         double Mass;                     // 质量，单位 kg
         double Radius;                   // 半径，单位 km
-        double RotationPeriod;           // 自转周期，单位 s
+        double Spin;                     // 对于普通天体表示自转周期，单位 s；对于黑洞表示无量纲自旋参数
         double Oblateness;               // 扁率
         double AxisTilt;                 // 自转轴倾角，单位度
-        double Albedo;                   // 反照率
         double Age;                      // 年龄，单位年
         double EscapeVelocity;           // 逃逸速度，单位 m/s
         double MagneticField;            // 磁场强度，单位 T
@@ -58,10 +58,9 @@ public:
     CelestialBody& SetName(const std::string& Name);
     CelestialBody& SetRadius(double Radius);
     CelestialBody& SetMass(double Mass);
-    CelestialBody& SetRotationPeriod(double RotationPeriod);
+    CelestialBody& SetSpin(double Spin);
     CelestialBody& SetOblateness(double Oblateness);
     CelestialBody& SetAxisTilt(double AxisTilt);
-    CelestialBody& SetAlbedo(double Albedo);
     CelestialBody& SetAge(double Age);
     CelestialBody& SetEscapeVelocity(double EscapeVelocity);
     CelestialBody& SetMagneticField(double MagneticField);
@@ -84,10 +83,9 @@ public:
     std::string GetName() const;
     double GetRadius() const;
     double GetMass() const;
-    double GetRotationPeriod() const;
+    double GetSpin() const;
     double GetOblateness() const;
     double GetAxisTilt() const;
-    double GetAlbedo() const;
     double GetAge() const;
     double GetEscapeVelocity() const;
     double GetMagneticField() const;

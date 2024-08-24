@@ -39,13 +39,16 @@
     <ClCompile Include="Sources\main1.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Sources\Vec3\Vec3.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="Sources\object\Objects.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Sources\TooolfuncForStarMap.cpp">
+    <ClCompile Include="Sources\Utils\TooolfuncForStarMap.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Sources\Utils\Vec3.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Sources\UI\HoverText.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -74,13 +77,16 @@
     <ClInclude Include="Sources\stdafx.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Sources\Vec3\Vec3.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="Sources\object\Objects.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Sources\TooolfuncForStarMap.h">
+    <ClInclude Include="Sources\Utils\TooolfuncForStarMap.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Sources\Utils\Vec3.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Sources\UI\HoverText.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

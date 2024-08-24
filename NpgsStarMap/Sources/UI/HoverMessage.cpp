@@ -14,34 +14,36 @@ HoverMessage::HoverMessage() : _BackRect({}), _Text({}), _LastText({}), _Texture
 
 void HoverMessage::ProcessEvent(const std::string Message, int FontSize, int w, int h) {
 	_Text = Message;
+	if (!_Text.empty()) {
+		int MouseX = 0, MouseY = 0;
+		SDL_GetMouseState(&MouseX, &MouseY);
 
-	int MouseX = 0, MouseY = 0;
-	SDL_GetMouseState(&MouseX, &MouseY);
+		TTF_Font* Font = TTF_OpenFont(kHoverMessageFontFilename.c_str(), FontSize);
+		std::istringstream Stream(_Text);
+		std::string TextLine;
 
-	TTF_Font* Font = TTF_OpenFont(kHoverMessageFontFilename.c_str(), FontSize);
-	std::istringstream Stream(_Text);
-	std::string TextLine;
+		int MaxWidth = 0;
+		int TotalHeight = 0;
+		int LineNumber = 0;
 
-	int MaxWidth = 0;
-	int TotalHeight = 0;
-	int LineNumber = 0;
+		// 计算每行的宽度和总高度
+		while (std::getline(Stream, TextLine)) {
+			int LineWidth = 0, LineHeight = 0;
+			TTF_SizeUTF8(Font, TextLine.c_str(), &LineWidth, &LineHeight);
+			if (LineWidth > MaxWidth)
+				MaxWidth = LineWidth;
+			TotalHeight += LineHeight;
+			++LineNumber;
+		}
 
-	// 计算每行的宽度和总高度
-	while (std::getline(Stream, TextLine)) {
-		int LineWidth = 0, LineHeight = 0;
-		TTF_SizeText(Font, TextLine.c_str(), &LineWidth, &LineHeight);
-		if (LineWidth > MaxWidth)
-			MaxWidth = LineWidth;
-		TotalHeight += LineHeight;
-		++LineNumber;
+		TTF_CloseFont(Font);
+
+		if (((MouseX + MaxWidth) <= w) && ((MouseY - TotalHeight) >= 0))
+			_BackRect = { MouseX, MouseY - TotalHeight - 4 , MaxWidth + 4, TotalHeight + 4 };
+		else
+			_BackRect = { MouseX - MaxWidth - 4, MouseY, MaxWidth + 4, TotalHeight + 4 };
+		//std::cout<< _BackRect.x<<" " << _BackRect.y << " " << _BackRect.w << " " << _BackRect.h << std::endl;
 	}
-
-	TTF_CloseFont(Font);
-
-	if (((MouseX + MaxWidth) <= w) && ((MouseY - TotalHeight) >= 0))
-		_BackRect = { MouseX, MouseY - TotalHeight - 4 , MaxWidth + 4, TotalHeight + 4 };
-	else
-		_BackRect = { MouseX - MaxWidth - 4, MouseY, MaxWidth + 4, TotalHeight + 4 };
 }
 
 void HoverMessage::Draw(SDL_Renderer* Renderer, int FontSize) {
@@ -64,6 +66,7 @@ void HoverMessage::Draw(SDL_Renderer* Renderer, int FontSize) {
 				_Textures.resize(InfoLines.size());
 				_LineWidths.resize(InfoLines.size());
 				_LineHeights.resize(InfoLines.size());
+				SDL_DestroyTexture(_Textures[i]);
 				_Textures[i] = SDL_CreateTextureFromSurface(Renderer, Surface);
 
 				_LineWidths[i] = Surface->w;

@@ -93,7 +93,7 @@ void InputBox::Draw(SDL_Renderer* Renderer) {
 		int w = 0, h = 0;
 		TTF_Font* Font = TTF_OpenFont(_FontFilename.c_str(), 300);
 		std::string Text = _PromptText + _InputText;
-		TTF_SizeText(Font, Text.c_str(), &w, &h);
+		TTF_SizeUTF8(Font, Text.c_str(), &w, &h);
 		if (w / double(h) > 1.01 * _TextRect.w / double(_TextRect.h)) {
 			_TextRect.h = h / double(w) * _TextRect.w;
 		} else if (w / double(h) < 0.99 * _TextRect.w / double(_TextRect.h)) {
@@ -103,7 +103,9 @@ void InputBox::Draw(SDL_Renderer* Renderer) {
 		_TextRect.y = _BackRect.y + 0.5 * _BackRect.h - 0.5 * _TextRect.h;
 
 		if (_InputText != _LastText) {
-			SDL_Surface* Surface = TTF_RenderText_Blended(Font, Text.c_str(), { 255, 255, 255 });
+			SDL_Surface* Surface = TTF_RenderUTF8_Blended(Font, Text.c_str(), { 255, 255, 255 });
+
+			SDL_DestroyTexture(_Texture);
 			_Texture = SDL_CreateTextureFromSurface(Renderer, Surface);
 			SDL_FreeSurface(Surface);
 		}

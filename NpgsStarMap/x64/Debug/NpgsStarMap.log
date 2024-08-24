@@ -1,0 +1,63 @@
+﻿  Button.cpp
+  HoverText.cpp
+  InputBox.cpp
+C:\Users\bcy00\source\repos\NpgsStarMap\NpgsStarMap\Sources\UI\Button.cpp(66,58): warning C4244: “参数”: 从“double”转换到“int”，可能丢失数据
+  (编译源文件“/Sources/UI/Button.cpp”)
+  
+C:\Users\bcy00\source\repos\NpgsStarMap\NpgsStarMap\Sources\UI\Button.cpp(77,72): warning C4838: 从“double”转换到“int”需要收缩转换
+  (编译源文件“/Sources/UI/Button.cpp”)
+  
+C:\Users\bcy00\source\repos\NpgsStarMap\NpgsStarMap\Sources\UI\Button.cpp(77,72): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+  (编译源文件“/Sources/UI/Button.cpp”)
+  
+C:\Users\bcy00\source\repos\NpgsStarMap\NpgsStarMap\Sources\UI\Button.cpp(100,55): warning C4838: 从“double”转换到“int”需要收缩转换
+  (编译源文件“/Sources/UI/Button.cpp”)
+  
+C:\Users\bcy00\source\repos\NpgsStarMap\NpgsStarMap\Sources\UI\Button.cpp(100,55): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+  (编译源文件“/Sources/UI/Button.cpp”)
+  
+C:\Users\bcy00\source\repos\NpgsStarMap\NpgsStarMap\Sources\UI\Button.cpp(129,45): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+  (编译源文件“/Sources/UI/Button.cpp”)
+  
+C:\Users\bcy00\source\repos\NpgsStarMap\NpgsStarMap\Sources\UI\Button.cpp(131,45): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+  (编译源文件“/Sources/UI/Button.cpp”)
+  
+C:\Users\bcy00\source\repos\NpgsStarMap\NpgsStarMap\Sources\UI\Button.cpp(134,49): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+  (编译源文件“/Sources/UI/Button.cpp”)
+  
+C:\Users\bcy00\source\repos\NpgsStarMap\NpgsStarMap\Sources\UI\InputBox.cpp(98,32): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+  (编译源文件“/Sources/UI/InputBox.cpp”)
+  
+C:\Users\bcy00\source\repos\NpgsStarMap\NpgsStarMap\Sources\UI\InputBox.cpp(100,32): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+  (编译源文件“/Sources/UI/InputBox.cpp”)
+  
+C:\Users\bcy00\source\repos\NpgsStarMap\NpgsStarMap\Sources\UI\InputBox.cpp(103,49): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+  (编译源文件“/Sources/UI/InputBox.cpp”)
+  
+C:\Users\bcy00\source\repos\NpgsStarMap\NpgsStarMap\Sources\UI\HoverText.cpp(55,42): warning C4838: 从“double”转换到“int”需要收缩转换
+  (编译源文件“/Sources/UI/HoverText.cpp”)
+  
+C:\Users\bcy00\source\repos\NpgsStarMap\NpgsStarMap\Sources\UI\Button.cpp(194,45): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+  (编译源文件“/Sources/UI/Button.cpp”)
+  
+C:\Users\bcy00\source\repos\NpgsStarMap\NpgsStarMap\Sources\UI\HoverText.cpp(55,42): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+  (编译源文件“/Sources/UI/HoverText.cpp”)
+  
+C:\Users\bcy00\source\repos\NpgsStarMap\NpgsStarMap\Sources\UI\Button.cpp(196,45): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+  (编译源文件“/Sources/UI/Button.cpp”)
+  
+C:\Users\bcy00\source\repos\NpgsStarMap\NpgsStarMap\Sources\UI\Button.cpp(199,49): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+  (编译源文件“/Sources/UI/Button.cpp”)
+  
+C:\Users\bcy00\source\repos\NpgsStarMap\NpgsStarMap\Sources\UI\Button.cpp(283,44): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+  (编译源文件“/Sources/UI/Button.cpp”)
+  
+C:\Users\bcy00\source\repos\NpgsStarMap\NpgsStarMap\Sources\UI\Button.cpp(285,44): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+  (编译源文件“/Sources/UI/Button.cpp”)
+  
+C:\Users\bcy00\source\repos\NpgsStarMap\NpgsStarMap\Sources\UI\Button.cpp(288,48): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+  (编译源文件“/Sources/UI/Button.cpp”)
+  
+  NpgsStarMap.vcxproj -> C:\Users\bcy00\source\repos\NpgsStarMap\x64\Debug\NpgsStarMap.exe
+  'pwsh.exe' 不是内部或外部命令，也不是可运行的程序
+  或批处理文件。

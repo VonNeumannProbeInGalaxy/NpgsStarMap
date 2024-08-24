@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CelestialObject.h"
 
@@ -38,8 +38,8 @@ inline CelestialBody& CelestialBody::SetMass(double Mass) {
     return *this;
 }
 
-inline CelestialBody& CelestialBody::SetRotationPeriod(double RotationPeriod) {
-    _Properties.RotationPeriod = RotationPeriod;
+inline CelestialBody& CelestialBody::SetSpin(double Spin) {
+    _Properties.Spin = Spin;
     return *this;
 }
 
@@ -50,11 +50,6 @@ inline CelestialBody& CelestialBody::SetOblateness(double Oblateness) {
 
 inline CelestialBody& CelestialBody::SetAxisTilt(double AxisTilt) {
     _Properties.AxisTilt = AxisTilt;
-    return *this;
-}
-
-inline CelestialBody& CelestialBody::SetAlbedo(double Albedo) {
-    _Properties.Albedo = Albedo;
     return *this;
 }
 
@@ -130,8 +125,8 @@ inline double CelestialBody::GetMass() const {
     return _Properties.Mass;
 }
 
-inline double CelestialBody::GetRotationPeriod() const {
-    return _Properties.RotationPeriod;
+inline double CelestialBody::GetSpin() const {
+    return _Properties.Spin;
 }
 
 inline double CelestialBody::GetOblateness() const {
@@ -140,10 +135,6 @@ inline double CelestialBody::GetOblateness() const {
 
 inline double CelestialBody::GetAxisTilt() const {
     return _Properties.AxisTilt;
-}
-
-inline double CelestialBody::GetAlbedo() const {
-    return _Properties.Albedo;
 }
 
 inline double CelestialBody::GetAge() const {

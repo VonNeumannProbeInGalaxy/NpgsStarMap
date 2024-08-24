@@ -1,8 +1,7 @@
-﻿#pragma once
+#pragma once
 
 // Assert
 // ------
-
 #ifdef _DEBUG
 #define NPGS_ASSERT_ENABLE
 #endif // _DEBUG

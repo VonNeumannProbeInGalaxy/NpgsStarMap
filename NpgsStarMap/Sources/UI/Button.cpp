@@ -8,14 +8,14 @@ namespace UI
 // ---------------------
 Button::Button()
 	: _ButtonColor({ 100, 100, 100 }), _ButtonRect({ 10, 10, 10, 10 }), _BackRect({ 9, 9, 8, 8 }),
-	_TextRect({ 9, 9, 8, 8 }), _Text("Button Text"), _FontFilename(kTextFontFilename),
-	_Texture(nullptr), _bPressState(false), _bToShow(false), _bMouseOnButton(false),
+	_TextRect({ 9, 9, 8, 8 }), _Text(""), _FontFilename(kTextFontFilename),
+	_Texture(nullptr), _Map(nullptr), _bPressState(false), _bToShow(false), _bMouseOnButton(false),
 	_bLastPress(false), _bPress(false), _bIsFirstLoad(true) {}
 
-Button::Button(int x, int y, int w, int h, bool bToShow, const SDL_Color& Color, const std::string_view Text, const std::string_view FontFilename)
+Button::Button(int x, int y, int w, int h, bool bToShow, const SDL_Color& Color, const std::string_view Text, const std::string_view FontFilename,const std::string MapName)
 	: _ButtonColor(Color), _ButtonRect({}), _BackRect({}),
-	_TextRect({}), _Text(Text), _FontFilename(kTextFontFilename),
-	_Texture(nullptr), _bPressState(false), _bToShow(bToShow), _bMouseOnButton(false),
+	_TextRect({}), _Text(Text), _FontFilename(kTextFontFilename),_MapName(MapName),
+	_Texture(nullptr), _Map(nullptr),_bPressState(false), _bToShow(bToShow), _bMouseOnButton(false),
 	_bLastPress(false), _bPress(false), _bIsFirstLoad(true) {
 	_ButtonRect = { x, y, w, h };
 	_BackRect = { int(x + 0.05 * w), int(y + 0.05 * h), int(0.9 * w), int(0.9 * h) };
@@ -47,7 +47,20 @@ bool Button::ProcessEvent(int x, int y, int w, int h, bool bShow) {
 
 void Button::DrawButtonPress(SDL_Renderer* Renderer) {
 	if (_bToShow) {
-		PushButton(Renderer);
+		SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 0);
+		if (_bPressState) {
+			
+			SDL_SetRenderDrawColor(Renderer, 200, 200, 200, 255);
+			if (_bMouseOnButton) {
+				SDL_SetRenderDrawColor(Renderer, 180, 180, 180, 200);
+			}
+		} else {
+			SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 0);
+			if (_bMouseOnButton) {
+				SDL_SetRenderDrawColor(Renderer, 155, 155, 155, 128);
+			}
+		}
+
 
 		SDL_RenderDrawRect(Renderer, &_ButtonRect);
 		Utils::DrawThickRectBorder(Renderer, _ButtonRect, 0.01 * _ButtonRect.w);
@@ -87,9 +100,31 @@ void Button::DrawButtonRelease_TextLeftAndLineDown(SDL_Renderer* Renderer) {
 		SDL_Rect line_rect = { _ButtonRect.x, _ButtonRect.y + 0.2 * _ButtonRect.h, _ButtonRect.w, 2 };
 		SDL_RenderFillRect(Renderer, &line_rect);
 
-		int w = 0, h = 0;
 		TTF_Font* Font = TTF_OpenFont(_FontFilename.c_str(), 500);
-		TTF_SizeText(Font, _Text.c_str(), &w, &h);
+		DrawFont(Renderer, Font);
+	}
+}
+void Button::DrawButtonWithoutRect_grey(SDL_Renderer* Renderer) {
+	if (_bToShow) {
+		SDL_Color color;
+		color = { 200, 200, 200, 255 };
+		if (_bPressState) {
+			color = { 200, 200, 200, 255 };
+			if (_bMouseOnButton) {
+				color = { 180, 180, 180, 200 };
+			}
+		} else {
+			color = { 200, 200, 200, 255 };
+			if (_bMouseOnButton) {
+				color = { 180, 180, 180, 200 };
+				if (_bPress) {
+					color = { 150, 150, 150, 200 };
+				}
+			}
+		}
+		TTF_Font* Font = TTF_OpenFont(_FontFilename.c_str(), 500);
+		int w = 0, h = 0;
+		TTF_SizeUTF8(Font, _Text.c_str(), &w, &h);
 		if (w / static_cast<double>(h) > 1.01 * _TextRect.w / static_cast<double>(_TextRect.h)) {
 			_TextRect.h = h / static_cast<double>(w) * _TextRect.w;
 		} else if (w / static_cast<double>(h) < 0.99 * _TextRect.w / static_cast<double>(_TextRect.h)) {
@@ -98,16 +133,108 @@ void Button::DrawButtonRelease_TextLeftAndLineDown(SDL_Renderer* Renderer) {
 
 		_TextRect.y = _BackRect.y + 0.5 * _BackRect.h - 0.5 * _TextRect.h;
 		_TextRect.x = _ButtonRect.x;
-		if (_bIsFirstLoad) {
+		if (_bIsFirstLoad || (_Texture == nullptr && _Text != "") || (_Map == nullptr && _MapName != "") || (_LastMapName != _MapName)) {
+			_LastMapName = _MapName;
+			if (_MapName != "") {
+				std::string path = "Assets/ButtonMap/" + _MapName;
+				SDL_Surface* loadedSurface = IMG_Load(path.c_str());
+				if (loadedSurface == nullptr) {
+					throw std::runtime_error("Unable to load image " + path + "! SDL_image Error: " + IMG_GetError());
+				}
+
+				_Map = SDL_CreateTextureFromSurface(Renderer, loadedSurface);
+				if (_Map == nullptr) {
+					throw std::runtime_error("Unable to create texture from " + path + "! SDL Error: " + SDL_GetError());
+				}
+
+				SDL_FreeSurface(loadedSurface);
+			}
 			_bIsFirstLoad = false;
-			SDL_Surface* Surface = TTF_RenderText_Blended(Font, _Text.c_str(), { 255, 255, 255 });
-			_Texture = SDL_CreateTextureFromSurface(Renderer, Surface);
-			SDL_FreeSurface(Surface);
+			if (_Text != "") {
+				SDL_Surface* Surface = TTF_RenderText_Blended(Font, _Text.c_str(), { 255,255,255 });
+				_Texture = SDL_CreateTextureFromSurface(Renderer, Surface);
+				SDL_FreeSurface(Surface);
+			}
 		}
 
 		TTF_CloseFont(Font);
-		SDL_RenderCopy(Renderer, _Texture, nullptr, &_TextRect);
+		if (_Texture != nullptr) {
+
+			SDL_RenderCopy(Renderer, _Texture, nullptr, &_TextRect);
+		}
+		if (_Map != nullptr) {
+			SDL_SetTextureColorMod(_Map, color.r, color.g, color.b);
+			SDL_SetTextureAlphaMod(_Map, color.a);
+			SDL_RenderCopy(Renderer, _Map, nullptr, &_ButtonRect);
+		}
 	}
+	
+
+}
+
+void Button::DrawButtonWithoutRect_blue(SDL_Renderer* Renderer) {
+	if (_bToShow) {
+		SDL_Color color;
+		color = { 200, 200, 200, 255 };
+		if (_bPressState) {
+			color = { 0, 255, 255, 255 };
+			if (_bMouseOnButton) {
+				color = { 0, 200, 255, 255 };
+			}
+		} else {
+			color = { 200, 200, 200, 255 };
+			if (_bMouseOnButton) {
+				color = { 180, 180, 180, 200 };
+			}
+		}
+		TTF_Font* Font = TTF_OpenFont(_FontFilename.c_str(), 500);
+		int w = 0, h = 0;
+		TTF_SizeUTF8(Font, _Text.c_str(), &w, &h);
+		if (w / static_cast<double>(h) > 1.01 * _TextRect.w / static_cast<double>(_TextRect.h)) {
+			_TextRect.h = h / static_cast<double>(w) * _TextRect.w;
+		} else if (w / static_cast<double>(h) < 0.99 * _TextRect.w / static_cast<double>(_TextRect.h)) {
+			_TextRect.w = w / static_cast<double>(h) * _TextRect.h;
+		}
+
+		_TextRect.y = _BackRect.y + 0.5 * _BackRect.h - 0.5 * _TextRect.h;
+		_TextRect.x = _ButtonRect.x;
+		if (_bIsFirstLoad || (_Texture == nullptr && _Text != "") || (_Map == nullptr && _MapName != "") || (_LastMapName != _MapName)) {
+			_LastMapName = _MapName;
+			if (_MapName != "") {
+				std::string path = "Assets/ButtonMap/" + _MapName;
+				SDL_Surface* loadedSurface = IMG_Load(path.c_str());
+				if (loadedSurface == nullptr) {
+					throw std::runtime_error("Unable to load image " + path + "! SDL_image Error: " + IMG_GetError());
+				}
+
+				_Map = SDL_CreateTextureFromSurface(Renderer, loadedSurface);
+				if (_Map == nullptr) {
+					throw std::runtime_error("Unable to create texture from " + path + "! SDL Error: " + SDL_GetError());
+				}
+
+				SDL_FreeSurface(loadedSurface);
+			}
+			_bIsFirstLoad = false;
+			if (_Text != "") {
+				SDL_Surface* Surface = TTF_RenderText_Blended(Font, _Text.c_str(), { 255,255,255 });
+				_Texture = SDL_CreateTextureFromSurface(Renderer, Surface);
+				SDL_FreeSurface(Surface);
+			}
+		}
+
+		TTF_CloseFont(Font);
+		if (_Texture != nullptr) {
+
+			SDL_RenderCopy(Renderer, _Texture, nullptr, &_TextRect);
+		}
+		if (_Map != nullptr) {
+			SDL_SetTextureColorMod(_Map, color.r, color.g, color.b);
+			SDL_SetTextureAlphaMod(_Map, color.a);
+			SDL_RenderCopy(Renderer, _Map, nullptr, &_ButtonRect);
+		}
+	}
+
+
 }
 
 void Button::SetState(bool bState) {
@@ -151,7 +278,7 @@ void Button::PushButton(SDL_Renderer* Renderer) const {
 
 void Button::DrawFont(SDL_Renderer* Renderer, TTF_Font* Font) {
 	int w = 0, h = 0;
-	TTF_SizeText(Font, _Text.c_str(), &w, &h);
+	TTF_SizeUTF8(Font, _Text.c_str(), &w, &h);
 	if (w / static_cast<double>(h) > 1.01 * _TextRect.w / static_cast<double>(_TextRect.h)) {
 		_TextRect.h = h / static_cast<double>(w) * _TextRect.w;
 	} else if (w / static_cast<double>(h) < 0.99 * _TextRect.w / static_cast<double>(_TextRect.h)) {
@@ -159,16 +286,40 @@ void Button::DrawFont(SDL_Renderer* Renderer, TTF_Font* Font) {
 	}
 
 	_TextRect.y = _BackRect.y + 0.5 * _BackRect.h - 0.5 * _TextRect.h;
+	_TextRect.x = _ButtonRect.x;
+	if (_bIsFirstLoad || (_Texture == nullptr&&_Text != "") || (_Map == nullptr && _MapName != "")||(_LastMapName != _MapName)) {
+		_LastMapName = _MapName;
+		if (_MapName != "") {
+			std::string path = "Assets/ButtonMap/" + _MapName;
+			SDL_Surface* loadedSurface = IMG_Load(path.c_str());
+			if (loadedSurface == nullptr) {
+				throw std::runtime_error("Unable to load image " + path + "! SDL_image Error: " + IMG_GetError());
+			}
 
-	if (_bIsFirstLoad) {
+			_Map =  SDL_CreateTextureFromSurface(Renderer, loadedSurface);
+			if (_Map == nullptr) {
+				throw std::runtime_error("Unable to create texture from " + path + "! SDL Error: " + SDL_GetError());
+			}
+
+			SDL_FreeSurface(loadedSurface);\
+		}
 		_bIsFirstLoad = false;
-		SDL_Surface* Surface = TTF_RenderText_Blended(Font, _Text.c_str(), { 255,255,255 });
-		_Texture = SDL_CreateTextureFromSurface(Renderer, Surface);
-		SDL_FreeSurface(Surface);
+		if(_Text != "")
+		{
+			SDL_Surface* Surface = TTF_RenderText_Blended(Font, _Text.c_str(), { 255,255,255 });
+			_Texture = SDL_CreateTextureFromSurface(Renderer, Surface);
+			SDL_FreeSurface(Surface);
+		}
 	}
 
 	TTF_CloseFont(Font);
-	SDL_RenderCopy(Renderer, _Texture, nullptr, &_TextRect);
+	if(_Texture!=nullptr)
+	{
+		SDL_RenderCopy(Renderer, _Texture, nullptr, &_TextRect);
+	}
+	if (_Map != nullptr) {
+		SDL_RenderCopy(Renderer, _Map, nullptr, &_ButtonRect);
+	}
 }
 
 }

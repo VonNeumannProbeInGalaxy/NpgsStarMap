@@ -18,21 +18,18 @@
 #define NOMINMAX
 
 #include "object/Objects.h"
-#include "Vec3/Vec3.h"
+#include "Utils/Vec3.h"
 #include "UI/Button.h"
 #include "UI/InputBox.h"
 #include "UI/HoverMessage.h"
-#include "TooolfuncForStarMap.h"
+#include <UI/HoverText.h>
+#include "Utils/TooolfuncForStarMap.h"
 
 namespace fs = std::filesystem;
 //using namespace std;
-const double PI = 3.141592653589793238;
 
 using json = nlohmann::json;
 
-
-
-#pragma region StarMap
 //————————————————————————————————————————————————————————————————————————————————————————————————————
 class StarMap {//屏幕各项数据，声明与初始化可能有遗漏
 public:
@@ -44,17 +41,22 @@ public:
 private:
 	long double timeingame;
 	double timerate;
+	int month;
+	int lastmonth;
 	SDL_Window* window;
 	SDL_Renderer* renderer;
+
+	int mousestorey;
 
 	bool running;
 	bool ifexit;
 	bool ifsave;
 
-	std::vector<Star> stars;
+	std::vector<StarVe> stars;
 	std::vector<Route> routes;
 
 	std::vector<Opoint> opoints;
+	std::vector<Parameterofship> shipwaittotakeof;
 	std::unordered_map<int, std::string> star_messages;
 
 	UI::Button menubutton;
@@ -64,29 +66,52 @@ private:
 	UI::Button subtimerate;
 	UI::Button stop;
 	UI::Button ShipAndRKKV;
+	UI::Button orbit;
+	UI::Button control;
+	UI::Button sendrkkv;
+	UI::Button sendship;
+	UI::Button sendlaser;
 
 	UI::HoverMessage hovermessage;
+	UI::HoverText showtimeingame;
+	UI::HoverText showtimerate;
+	UI::HoverText detailed;
 
-	Vec3 cenposcam;//对应11111
+	Vec3 cenposcam;
 	Vec3 reposcam;
 	Vec3 poscam;
 	Vec3 vecx, vecy, vecz;
-	Vec3 target;
-	Vec3 circen;
-
-	double offset_x;
+    double offset_x;
 	double offset_y;
 	double posx, posy;
 	double mposx, mposy;
 	double theta, phi;
-	double r, rtarget;//确定
+	double zvectheta, zvecphi;
+	double cirtheta, cirphi;
+	double r, rtarget;
 
-	int targetname;
-	int lasttargetname;
-	SDL_Color targetcolor;
-	int targetcloud;
+	Vec3 circen;
+
+	StarVe targetstar;
 	bool totar;
+	StarVe controlstar;
+	bool tocontrol;
+
+	StarVe rightclickstar;
+	int lastrightname;
+	PlaneT rightclickplanet;
+	bool planetmessage;
+
 	std::string text;//确定
+
+
+
+	Vec3 targetplanet;
+	Vec3 lasttargetplanet;
+	int followplanet;
+	int lastfollowplanet;
+	bool toplanet;
+	bool onplanet;
 
 	double scroll_y;
 	double targetscroll_y;
@@ -109,6 +134,7 @@ private:
 
 	bool showcircle;
 	bool showvertical;
+	bool showorbit;
 
 	SDL_Texture* menuback;
 
@@ -139,15 +165,14 @@ private:
 
 	void update_camera();
 	void sortsatrsbydistance();
-	void update_stars();
+	void update_and_draw_stars();
 	void update_opoints();
-	void updata_ship();
+	void shiptakeof();
 
-	void add_ship_into_route(int number1, int number2, int numberofship, int cat, bool dir, double v, double m1, double m2, double m3);
+	void add_ship_into_route(int number1, int number2, int numberofship, int cat, bool dir, double v, double m1, double m2, double m3,int pnum=-1);
 
 	void renderTextureWithColor(SDL_Renderer* renderer, SDL_Texture* texture, SDL_Color color, SDL_Rect destRect);
-	void draw_stars();
-	void draw_ships();
+	void updata_and_draw_ships();
 	void draw_opoints();
 	void draw_info_panel();
 	void draw_time(double atime);

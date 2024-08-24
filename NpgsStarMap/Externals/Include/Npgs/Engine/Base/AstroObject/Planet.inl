@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Planet.h"
 
@@ -12,6 +12,11 @@ inline Planet& Planet::SetExtendedProperties(const ExtendedProperties& PlanetExt
 
 inline const Planet::ExtendedProperties& Planet::GetExtendedProperties() const {
     return _PlanetExtraProperties;
+}
+
+inline Planet& Planet::SetAbledo(double Albedo) {
+    _PlanetExtraProperties.Albedo = Albedo;
+    return *this;
 }
 
 inline Planet& Planet::SetAverageDensity(double AverageDensity) {
@@ -77,6 +82,10 @@ inline Planet& Planet::SetLife(bool bHasLife) {
 inline Planet& Planet::SetType(PlanetType Type) {
     _PlanetExtraProperties.Type = Type;
     return *this;
+}
+
+inline double Planet::GetAbledo() const {
+    return _PlanetExtraProperties.Albedo;
 }
 
 inline double Planet::GetAverageDensity() const {

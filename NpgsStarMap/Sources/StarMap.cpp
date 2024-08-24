@@ -8,16 +8,25 @@ StarMap::StarMap(int w, int h) : width(w), height(h), running(true) {//屏幕初
 	generate_opoints();
 
 	hovermessage = UI::HoverMessage();
-	menubutton = UI::Button(0, 0, 100, 100, 1, { 100,100,100 ,255 }, "menu");
-	coordinate = UI::Button(0, 0, 100, 100, 0, { 100,100,100 ,255 }, "coordinate");
+	menubutton = UI::Button(0, 0, 100, 100, 1, { 100,100,100 ,255 }, "",kTextFontFilename,"menu.png");
+	coordinate = UI::Button(0, 0, 100, 100, 0, { 100,100,100 ,255 }, "", kTextFontFilename,"coordinate.png");
 	exitbutton = UI::Button(0, 0, 100, 100, 0, { 100,100,100 ,255 }, "exit&save");
-	addtimerate = UI::Button(0, 0, 100, 100, 0, { 100,100,100,255 }, "->");
-	subtimerate = UI::Button(0, 0, 100, 100, 0, { 100,100,100,255 }, "<-");
-	ShipAndRKKV = UI::Button(0, 0, 100, 100, 0, { 100,100,100,255 }, "ShipAndRKKV");
-	stop = UI::Button(0, 0, 100, 100, 0, { 100,100,100,255 }, "||/>");
+	addtimerate = UI::Button(0, 0, 100, 100, 0, { 100,100,100,255 }, "", kTextFontFilename, "speedup.png");
+	subtimerate = UI::Button(0, 0, 100, 100, 0, { 100,100,100,255 }, "", kTextFontFilename, "slowdown.png");
+	ShipAndRKKV = UI::Button(0, 0, 100, 100, 0, { 100,100,100,255 }, "", kTextFontFilename, "track.png");
+	orbit = UI::Button(0, 0, 100, 100, 0, { 100,100,100,255 }, "", kTextFontFilename, "orbit.png");
+	orbit._bPressState = 1;
+	stop = UI::Button(0, 0, 100, 100, 0, { 100,100,100,255 }, "", kTextFontFilename,"pause.png");
 	stop._bPressState = 1;
+	sendrkkv= UI::Button(0, 0, 100, 100, 0, { 100,100,100,255 }, "", kTextFontFilename, "rkkv0.png");
+	sendship = UI::Button(0, 0, 100, 100, 0, { 100,100,100,255 }, "", kTextFontFilename, "ship0.png");
+	sendlaser = UI::Button(0, 0, 100, 100, 0, { 100,100,100,255 }, "", kTextFontFilename, "laser0.png");
+	control = UI::Button(0, 0, 100, 100, 0, { 100,100,100,255 }, "", kTextFontFilename, "goto.png");
 	timeingame = 0;
 	timerate = 1;
+	month = 0;
+	lastmonth = 0;
+	mousestorey = 0;
 
 	ifexit = 0;
 	ifsave = 0;
@@ -28,7 +37,6 @@ StarMap::StarMap(int w, int h) : width(w), height(h), running(true) {//屏幕初
 	vecx = Vec3(0, 0, 0);
 	vecy = Vec3(0, 0, 0);
 	vecz = Vec3(0, 0, 0);
-	target = Vec3(0, 0, 0);
 	circen = Vec3(0, 0, 0);
 
 	offset_x = 0;
@@ -39,15 +47,21 @@ StarMap::StarMap(int w, int h) : width(w), height(h), running(true) {//屏幕初
 	mposy = 0;
 	theta = 0;
 	phi = 0;
+	zvectheta = 0;
+	zvecphi = 0;
+	cirtheta = 1;
+	cirphi = 1;
 	r = 20;
 	rtarget = 20;//确定
 
-	targetname = -1;
-	lasttargetname = -1;
-	targetcolor = { 0, 0, 0, 255 };
-	targetcloud = 0;
+
+	lastrightname = -1;
 	totar = false;
+	tocontrol = false;
 	text = "";//确定
+
+	toplanet = 0;
+	onplanet = 0;
 
 	scroll_y = 0;
 	targetscroll_y = 0;
@@ -68,6 +82,7 @@ StarMap::StarMap(int w, int h) : width(w), height(h), running(true) {//屏幕初
 	dragging = false;
 	doubleclick = false;
 	showmessage = false;
+	showorbit = true;
 
 	showcircle = 0;
 	showvertical = 0;
@@ -282,12 +297,11 @@ void StarMap::menu() {
 		createuni.DrawButtonRelease_TextLeftAndLineDown(renderer);
 		starnum.Draw(renderer);
 		if (startnew._bMouseOnButton) {
-			hovermessage.ProcessEvent(u8"aa启动\nsdhusdhuudh\nsh\naaaaaaaaaaaaaaaaaaaaaaaaaaa", height / 32.0, width, height);
+			hovermessage.ProcessEvent(convertChar8ArrayToString(u8"aa启动\nsdhusdhuudh\nsh\naaaaaaaaaaaaaaaaaaaaaaaaaaa"), height / 32.0, width, height);
 		}
 		hovermessage.Draw(renderer, height / 32.0);
 		SDL_RenderPresent(renderer);
 	}
-
 
 }
 
@@ -368,7 +382,7 @@ void StarMap::openold(int n) {
 			realdel.ProcessEvent(0.4 * width, 0.5 * height, 0.2 * width, 0.1 * height, 1);
 			dontdel.ProcessEvent(0.4 * width, 0.7 * height, 0.2 * width, 0.1 * height, 1);
 			if (realdel._bMouseOnButton) {
-				hovermessage.ProcessEvent(u8"存档" + std::to_string(n) + u8"将被永久删除\n下一个庞加莱回归见。", height / 32.0, width, height);
+				hovermessage.ProcessEvent(convertChar8ArrayToString(u8"存档") + std::to_string(n) + convertChar8ArrayToString(u8"将被永久删除\n下一个庞加莱回归见。"), height / 32.0, width, height);
 			}
 			if (realdel.ProcessEvent(0.4 * width, 0.5 * height, 0.2 * width, 0.1 * height, 1)) {
 				std::string filepath = "save/" + std::to_string(n) + "star_data.json";
@@ -399,77 +413,6 @@ void StarMap::openold(int n) {
 
 }
 
-static void drawDashedLine(SDL_Renderer* renderer, int x1, int y1, int x2, int y2, double dashLength) {
-
-	double dx = x2 - x1;
-	double dy = y2 - y1;
-	double length = sqrt(dx * dx + dy * dy);
-
-	// Calculate how many dashes are needed
-	int numDashes = static_cast<int>(length / dashLength);
-	if (numDashes >= 1000) {
-		numDashes = 1000;
-	}
-	// Calculate dash components
-	double dash_dx = dx / numDashes;
-	double dash_dy = dy / numDashes;
-
-	// Draw dashes
-	for (int i = 0; i < numDashes; ++i) {
-
-		// Calculate start and end points of each dash
-		int dash_x1 = static_cast<int>(x1 + i * dash_dx);
-		int dash_y1 = static_cast<int>(y1 + i * dash_dy);
-		int dash_x2 = static_cast<int>(x1 + (i + 0.5) * dash_dx);
-		int dash_y2 = static_cast<int>(y1 + (i + 0.5) * dash_dy);
-
-		// Draw dash
-		SDL_RenderDrawLine(renderer, dash_x1, dash_y1, dash_x2, dash_y2);
-	}
-
-	// Make sure the last dash reaches the endpoint of the line
-   // SDL_RenderDrawLine(renderer, static_cast<int>(x1 + numDashes * dash_dx), static_cast<int>(y1 + numDashes * dash_dy), x2, y2);
-}
-
-static std::string formatTime(double seconds) {
-	// Define the units in seconds
-	const double yearInSeconds = 31536000;  // 365 days
-	const double monthInSeconds = 2592000;  // 30 days
-	const double dayInSeconds = 86400;
-
-
-	// Calculate years
-	long long years = (seconds / yearInSeconds);
-	seconds -= years * yearInSeconds;
-
-	// Calculate months
-	long long months = (seconds / monthInSeconds);
-	seconds -= months * monthInSeconds;
-
-	// Calculate days
-	long long days = (seconds / dayInSeconds);
-	seconds -= days * dayInSeconds;
-
-
-	// Seconds left
-	int remainingSeconds = static_cast<int>(seconds);
-
-	// Prepare the formatted string
-	std::string result;
-	if (years > 0) {
-		result += std::to_string(years) + " years ";
-	}
-	if (months > 0) {
-		result += std::to_string(months) + " months ";
-	}
-	if (days > 0) {
-		result += std::to_string(days) + " days ";
-	}
-	result += std::to_string(remainingSeconds) + " s ";
-
-
-	return result;
-}
 
 void StarMap::init_SDL() {
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -674,148 +617,234 @@ void StarMap::generate_stars(double n) {//生成，可能无误
 	const int nstar0 = n;
 	const double stardensity = 0.004;
 	const double rmap0 = std::pow(nstar0 * 3 / (stardensity * 4 * PI), 1.0 / 3);
+	Npgs::Modules::StellarGenerator Gen(42, 0.075);
 
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_real_distribution<> dis(-rmap0, rmap0);
 	std::uniform_real_distribution<> temp_dis(1000, 12000);
-	std::uniform_real_distribution<> power_dis(0, 1);
+	std::uniform_real_distribution<> phi_dis(0, 1);
+	std::uniform_real_distribution<> theta_dis(0, PI);
 	std::uniform_int_distribution<> type_dis(0, 4);
 	std::uniform_real_distribution<> radius_dis(-3.3, -1);
 	std::cout << nstar0 << std::endl;
 	std::cout << rmap0 << std::endl;
 	int nnn = 0;
+	StarVe tstar(
+		0,
+		0,
+		1.7,
+		Vec3(0, 0, 0),
+		2800,
+		std::pow(2.71828, -6.9077 + 23),
+		type_dis(gen),
+		0,
+		-1,
+		0,
+		0
+	);
+	stars.push_back(tstar);
+
+	StarVe ssstar(
+		0,
+		0,
+		0,
+		Vec3(1000, 0, 0),
+		2800,
+		std::pow(2.71828, -6.9077 + 23),
+		type_dis(gen),
+		0,
+		-1,
+		0,
+		0
+	);
+	stars.push_back(ssstar);
+
+
 	for (int i = 0; i < nstar0; i++) {
 		double xstar0 = dis(gen);
 		double ystar0 = dis(gen);
 		double zstar0 = dis(gen);
 		bool aaa = false;
 		if (xstar0 * xstar0 + ystar0 * ystar0 + zstar0 * zstar0 < rmap0 * rmap0) {
+
+			auto dstar = Gen.GenerateStar();
+			while (std::isnan(dstar.GetRadius())) {
+				dstar = Gen.GenerateStar(); std::cout<<"a";
+			}
 			std::string name = random_name();
-			std::string tn = "fr";
-			if (i % 2 == 0) {
-				tn = "em";
+			int tn = 0;
+			if (i % 3 == 0) {
+				tn = 1;
+			} else if (i % 3 == 1) {
+				tn = -1;
 			}
-			star_messages[i] = name + std::to_string(i) + u8"s introduction\ntestline, 114514中w";
-			if (power_dis(gen) > 0.9) {//测试垂线
-				aaa = true;
-			}
-			Star astar = {
+			//	star_messages[i] = name + std::to_string(i) + convertChar8ArrayToString(u8"s introduction\ntestline, 114514中w");
+				if (phi_dis(gen) > 0.9) {//测试垂线
+					aaa = true;
+				}
+			double the = theta_dis(gen);
+			double phi = phi_dis(gen);
+			StarVe astar(
 				i,
+				the,
+				phi,
 				Vec3(xstar0, ystar0, zstar0),
-				Vec3(), 0, 0,{0, 0},
-				temp_dis(gen),
-				std::pow(2.71828, -6.9077 + 23 * power_dis(gen)),
+				dstar.GetTeff(),
+				dstar.GetLuminosity() / Npgs::kSolarLuminosity,
 				type_dis(gen),
-				pow(10,radius_dis(gen)) * 0.000016,
+				dstar.GetRadius() * 0.000000000000000105700083402,
 				tn,
 				aaa,
-				{0, 0},
-				0,
 				0
-			};
+			);
+			astar.StarData = dstar;
+
+			for (int j = 1; j < 5; j++) {
+				double r = 0.00001581 * j;
+				
+				PlaneT aplanet = {
+					j,
+					{0,0,0},{0,0,0},0,0,{0,0},
+					0.00001581*j,
+					the,
+					phi,
+					1
+				};
+				astar.planets.push_back(aplanet);
+			}
+
 			stars.push_back(astar);
 			nnn = i;
 		} else {
 			i -= 1;
 		}
 	}
-	add_ship_into_route(1, 2, 1, 0, 0, 0.7, 0, 0, 0);
-	add_ship_into_route(1, 2, 1, 1, 0, 0.8, 0, 0, 0);
-	add_ship_into_route(1, 2, 1, 2, 0, 1, 0, 0, 0);
-	add_ship_into_route(1, 2, 1, 0, 1, 0.7, 0, 0, 0);
-	add_ship_into_route(1, 2, 1, 1, 1, 0.8, 0, 0, 0);
-	add_ship_into_route(1, 2, 1, 2, 1, 1, 0, 0, 0);
-	add_ship_into_route(1, 4, 1, 0, 0, 0.7, 0, 0, 0);
-	add_ship_into_route(1, 4, 1, 1, 0, 0.8, 0, 0, 0);
-	add_ship_into_route(1, 4, 1, 2, 0, 1, 0, 0, 0);
-	add_ship_into_route(2, 3, 1, 0, 0, 0.7, 0, 0, 0);
-	add_ship_into_route(2, 3, 1, 1, 0, 0.8, 0, 0, 0);
-	add_ship_into_route(2, 3, 1, 2, 0, 1, 0, 0, 0);
-	std::uniform_int_distribution<> n_dis(0, nnn);
-	std::uniform_int_distribution<> cat_dis(0, 2);
-	std::uniform_int_distribution<> dir_dis(0, 1);
-	for (int i = 0; i < 10; i++) {
-		add_ship_into_route(n_dis(gen), n_dis(gen), 1, cat_dis(gen), dir_dis(gen), power_dis(gen), 0, 0, 0);
-	}
-	Star tstar = {
-		114514,
-		Vec3(0, 0, -10),
-		Vec3(), 0,0, {0, 0},
-		7000,
-		std::pow(2.71828, -6.9077 + 23),
-		0,
-		0.01 * 0.000016,
-		"fr",
-		true,
-		{0, 0},
-		0,
-		0
-	};
-	stars.push_back(tstar);
-	std::vector<double> dist = { 0.05,0.1,0.2,0.4,0.8,6.4,51.2,409.6,1638.5,3276.8 };
-	for (int i = 0; i < 10; i += 1) {
-		double r = dist[i];
-		tstar = {
-			i + 1,
-			Vec3(r * cos(PI / 9 * i), r * sin(PI / 9 * i), 0),
-			Vec3(), 0,0, {0, 0},
-			7000,
-			10000,
-			0,
-			0.01 * 0.000016,
-			"fr",
-			true,
-			{0, 0},
-			0,
-			0
-		};
-		stars.push_back(tstar);
-	}
+	//Npgs::Modules::StellarGenerator Genx(42, 8.0, 0.0, pow(10, 7));
+	//
+	//for (int i = 0; i < nstar0/1000.0; i++) {
+	//	double xstar0 = dis(gen);
+	//	double ystar0 = dis(gen);
+	//	double zstar0 = dis(gen);
+	//	bool aaa = false;
+	//	if (xstar0 * xstar0 + ystar0 * ystar0 + zstar0 * zstar0 < rmap0 * rmap0) {
+	//
+	//		auto dstar = Genx.GenerateStar();
+	//		while (dstar.GetMass() == 0) {
+	//			dstar = Genx.GenerateStar();
+	//		}
+	//		std::string name = random_name();
+	//		std::string tn = "fr";
+	//		if (i % 2 == 0) {
+	//			tn = "em";
+	//		}
+	//		star_messages[i] = name + std::to_string(i) + convertChar8ArrayToString(u8"s introduction\ntestline, 114514中w");
+	//		if (power_dis(gen) > 0.9) {//测试垂线
+	//			aaa = true;
+	//		}
+	//		StarVe astar = {
+	//			i,
+	//			Vec3(xstar0, ystar0, zstar0),
+	//			Vec3(), 0, 0,{0, 0},
+	//			dstar.GetTeff(),
+	//			dstar.GetLuminosity() / Npgs::kSolarLuminosity,
+	//			type_dis(gen),
+	//			dstar.GetRadius() * 0.000000000000000105700083402,
+	//			tn,
+	//			aaa,
+	//			{0, 0},
+	//			0,
+	//			0,
+	//			dstar
+	//		};
+	//		stars.push_back(astar);
+	//		nnn = i;
+	//	} else {
+	//		i -= 1;
+	//	}
+	//}
+	//add_ship_into_route(1, 2, 1, 0, 0, 0.7, 0, 0, 0);
+	//add_ship_into_route(1, 2, 1, 1, 0, 0.8, 0, 0, 0);
+	//add_ship_into_route(1, 2, 1, 2, 0, 1, 0, 0, 0);
+	//add_ship_into_route(1, 2, 1, 0, 1, 0.7, 0, 0, 0);
+	//add_ship_into_route(1, 2, 1, 1, 1, 0.8, 0, 0, 0);
+	//add_ship_into_route(1, 2, 1, 2, 1, 1, 0, 0, 0);
+	//add_ship_into_route(1, 4, 1, 0, 0, 0.7, 0, 0, 0);
+	//add_ship_into_route(1, 4, 1, 1, 0, 0.8, 0, 0, 0);
+	//add_ship_into_route(1, 4, 1, 2, 0, 1, 0, 0, 0);
+	//add_ship_into_route(2, 3, 1, 0, 0, 0.7, 0, 0, 0);
+	//add_ship_into_route(2, 3, 1, 1, 0, 0.8, 0, 0, 0);
+	//add_ship_into_route(2, 3, 1, 2, 0, 1, 0, 0, 0);
+	//std::uniform_int_distribution<> n_dis(0, nnn);
+	//std::uniform_int_distribution<> cat_dis(0, 2);
+	//std::uniform_int_distribution<> dir_dis(0, 1);
+    //for (int i = 0; i < 10000; i++) {
+    //	add_ship_into_route(n_dis(gen), n_dis(gen), 1, cat_dis(gen), dir_dis(gen), phi_dis(gen), 0, 0, 0);
+    //}
+
+	//std::vector<double> dist = { 0.05,0.1,0.2,0.4,0.8,6.4,51.2,409.6,1638.5,3276.8 };
+	//for (int i = 0; i < 10; i += 1) {
+	//	double r = dist[i];
+	//	tstar = {
+	//		i + 1,
+	//		Vec3(r * cos(PI / 9 * i), r * sin(PI / 9 * i), 0),
+	//		Vec3(), 0,0, {0, 0},
+	//		7000,
+	//		10000,
+	//		0,
+	//		0.01 * 0.000016,
+	//		"fr",
+	//		true,
+	//		{0, 0},
+	//		0,
+	//		0
+	//	};
+	//	stars.push_back(tstar);
+	//}
 
 }
 
 void StarMap::generate_nebula() {
-	const int nstar0 = 2;
-	const double rmap0 = 100;
-
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_real_distribution<> dis(-rmap0, rmap0);
-
-	std::uniform_real_distribution<> radius_dis(0, 1);
-	std::cout << std::ceil(nstar0 * 6 / PI) << std::endl;
-	std::cout << rmap0 << "a" << std::endl;
-	for (int i = 0; i < std::ceil(nstar0 * 6 / PI); ++i) {
-		double xstar0 = dis(gen);
-		double ystar0 = dis(gen);
-		double zstar0 = dis(gen);
-		bool aaa = false;
-		if (xstar0 * xstar0 + ystar0 * ystar0 + zstar0 * zstar0 < rmap0 * rmap0) {
-			std::string name = random_name();
-			star_messages[i] = name + std::to_string(i) + "s introduction\ntestline, 114514w";
-
-			Star nebula = {
-				1919810 + i,
-				Vec3(xstar0, ystar0, zstar0),
-				Vec3(), 0, 0,{0, 0},
-				0,
-				0,
-				-1,
-				pow(10,radius_dis(gen)),
-				"cl",
-				0,
-				{0, 0},
-				0,
-				1
-			};
-			stars.push_back(nebula);
-		}
-	}
+//	const int nstar0 = 2;
+//	const double rmap0 = 100;
+//
+//	std::random_device rd;
+//	std::mt19937 gen(rd());
+//	std::uniform_real_distribution<> dis(-rmap0, rmap0);
+//
+//	std::uniform_real_distribution<> radius_dis(0, 1);
+//	std::cout << std::ceil(nstar0 * 6 / PI) << std::endl;
+//	std::cout << rmap0 << "a" << std::endl;
+//	for (int i = 0; i < std::ceil(nstar0 * 6 / PI); ++i) {
+//		double xstar0 = dis(gen);
+//		double ystar0 = dis(gen);
+//		double zstar0 = dis(gen);
+//		bool aaa = false;
+//		if (xstar0 * xstar0 + ystar0 * ystar0 + zstar0 * zstar0 < rmap0 * rmap0) {
+//			std::string name = random_name();
+//			star_messages[i] = name + std::to_string(i) + "s introduction\ntestline, 114514w";
+//
+//			StarVe nebula = {
+//				1919810 + i,
+//				Vec3(xstar0, ystar0, zstar0),
+//				Vec3(), 0, 0,{0, 0},
+//				0,
+//				0,
+//				-1,
+//				pow(10,radius_dis(gen)),
+//				"cl",
+//				0,
+//				{0, 0},
+//				0,
+//				1
+//			};
+//			stars.push_back(nebula);
+//		}
+//	}
 }
 
 void StarMap::generate_opoints() {
-	for (double r = 1; r < 100; r *= 1.25892) {
+	for (double r = 1; r < 26; r *= 1.174618944) {
 		for (double the = 0; the < 2 * PI; the += 2 * PI / 100.0) {
 			Opoint apoint = {
 				Vec3(r * std::cos(the), r * std::sin(the), 0),
@@ -826,7 +855,7 @@ void StarMap::generate_opoints() {
 		}
 	}
 	for (double the = 0; the < 2 * PI; the += 2 * PI / 8) {
-		for (int r = 0; r < 100; r += 1) {
+		for (int r = 0; r < 26; r += 1) {
 			Opoint apoint = {
 				Vec3(r * std::cos(the), r * std::sin(the), 0),
 				Vec3(), 0, 0,{0, 0}
@@ -880,7 +909,7 @@ bool StarMap::read(int number) {
 	file >> j;
 	try {
 		for (const auto& star_json : j["stars"]) {
-			Star star;
+			StarVe star;
 
 			// Read star properties from JSON object
 			star.number = star_json["name"];
@@ -963,7 +992,7 @@ bool StarMap::read(int number) {
 
 void StarMap::handle_events() {//鼠标事件，可能完善
 
-	bool aa = !menubutton.ProcessEvent(0, 0, 0.1 * width, 0.1 * height, 1) && !menubutton._bMouseOnButton;
+	bool aa = !menubutton.ProcessEvent(0, 0,  width/30.0, width / 30.0, 1) && !menubutton._bMouseOnButton;
 
 	doubleclick = false;
 	SDL_Event event;
@@ -983,7 +1012,7 @@ void StarMap::handle_events() {//鼠标事件，可能完善
 			handle_mouse_button_down(event);
 		} else if (event.type == SDL_MOUSEBUTTONUP && aa) {
 			handle_mouse_button_up(event);
-		} else if (event.type == SDL_MOUSEMOTION && !menubutton.ProcessEvent(0, 0, 0.1 * width, 0.1 * height, 1)) {
+		} else if (event.type == SDL_MOUSEMOTION && !menubutton.ProcessEvent(0, 0, width / 30.0, width / 30.0, 1)) {
 			handle_mouse_motion(event);
 		}
 	}
@@ -994,7 +1023,7 @@ void StarMap::handle_mouse_wheel(SDL_Event& event) {//页面内摄影机距离�
 
 	int mouseX, mouseY;
 	SDL_GetMouseState(&mouseX, &mouseY);
-	if (!menubutton.ProcessEvent(0, 0, 0.1 * width, 0.1 * height, 1) && !menubutton._bMouseOnButton) {
+	if (!menubutton.ProcessEvent(0, 0, width / 30.0, width / 30.0, 1) && !menubutton._bMouseOnButton) {
 		if (!showmessage || (showmessage && double(mouseX) / width < (1 - messagewidthrate))) {
 			if (event.wheel.y > 0) {
 				rtarget /= 1.2;
@@ -1012,7 +1041,7 @@ void StarMap::handle_mouse_wheel(SDL_Event& event) {//页面内摄影机距离�
 				targetscroll_y -= static_cast<int>(height / 32.0);
 			}
 		}
-	} else if (menubutton.ProcessEvent(0, 0, 0.1 * width, 0.1 * height, 1)) {
+	} else if (menubutton.ProcessEvent(0, 0, width / 30.0, width / 30.0, 1)) {
 		if (event.wheel.y > 0) {
 			if (menutargetscolly < 0) {
 				menutargetscolly += static_cast<int>(height / 32.0);
@@ -1080,15 +1109,21 @@ void StarMap::update() {//已完善
 		timeingame += deltatime * timerate;
 	}
 	// std::cout << timeingame << std::endl;
+	lastmonth = month;
+	month = int(fmod(timeingame , 31536000.0)/ 2628000.0);
+
+	if(month!=lastmonth||deltatime>6* 2628000.0)
+	{
+		shiptakeof();
+	}
+
+
+
 	update_camera();
-	update_stars();
 	if (showcircle == 1) {
 		update_opoints();
 	}
-	if (ShipAndRKKV._bPressState) {
-		updata_ship();
-	}
-	// 更新消息面板
+	// 更新消息面板横向运动
 	if (showmessage) {
 		messagextarget = width * (1 - messagewidthrate);
 	} else {
@@ -1096,9 +1131,10 @@ void StarMap::update() {//已完善
 	}
 	messagex += (messagextarget - messagex) * variable_threshold1(18 * deltatime);
 
-	// 更新滚动
+	// 更新侧边栏滚动
 	scroll_y += (targetscroll_y - scroll_y) * variable_threshold1(18 * deltatime);
-	if (menubutton.ProcessEvent(0, 0, 0.1 * width, 0.1 * height, 1)) {
+	//菜单滚动
+	if (menubutton.ProcessEvent(0, 0, width / 30.0, width / 30.0, 1)) {
 		menuscolly += (menutargetscolly - menuscolly) * variable_threshold1(18 * deltatime);
 	}
 
@@ -1108,6 +1144,52 @@ void StarMap::update() {//已完善
 }
 
 void StarMap::update_camera() {
+
+	if (totar == true&&!toplanet) {
+		if (vector_length(subtract_vectors(targetstar.absolute_pos, cenposcam)) < pow(10, -14)) {
+			totar = false;
+		}
+		if (totar == true)
+		{
+			followplanet = -1;
+			toplanet = false;
+			onplanet = false;
+			cenposcam = add_vectors(cenposcam, scalar_multiply(variable_threshold1(0.05 * 60 * deltatime), (subtract_vectors(targetstar.absolute_pos, cenposcam))));
+			//circen = target;
+			//cirtheta = ttheta;
+			//cirphi = tphi;
+			vec1to2(zvectheta, zvecphi, targetstar.theta, targetstar.phi, variable_threshold1(0.05 * 60 * deltatime));
+		}
+
+
+	}
+	if (vector_length(subtract_vectors(controlstar.absolute_pos, circen)) < pow(10, -14)) {
+		tocontrol = false;
+	}
+	if (tocontrol) {
+
+		circen = add_vectors(circen, scalar_multiply(variable_threshold1(0.05 * 240 * deltatime), (subtract_vectors(controlstar.absolute_pos, circen))));
+		vec1to2(cirtheta, cirphi, controlstar.theta, controlstar.phi, variable_threshold1(0.05 * 140 * deltatime));
+	}
+	if (toplanet) {
+		if (vector_length(subtract_vectors(targetplanet, cenposcam)) < pow(10, -13)) {
+			toplanet = false;
+			onplanet = true;
+		}
+		if (toplanet)
+		{
+			onplanet = 0;
+			Vec3 dx = subtract_vectors(targetplanet, lasttargetplanet);
+			if (lastfollowplanet == followplanet) {
+				cenposcam = add_vectors(cenposcam, dx);
+			}
+			cenposcam = add_vectors(cenposcam, scalar_multiply(variable_threshold1(0.05 * 60 * deltatime), (subtract_vectors(targetplanet, cenposcam))));
+		}
+
+	}	if (onplanet) {
+		cenposcam = targetplanet;
+
+	}
 	// 更新相机位置和方向,可能完善
 	if (posx > width) {
 		posx -= width;
@@ -1120,29 +1202,47 @@ void StarMap::update_camera() {
 		posy = 0;
 	}
 	theta = posx / width * 4 * PI;
-	phi = 0.99 * (posy / height - 0.5) * PI;
+	phi = 0.999 * (posy / height - 0.5) * PI;
 
 	reposcam.x = r * std::cos(phi) * std::cos(theta);
 	reposcam.y = r * std::cos(phi) * std::sin(theta);
 	reposcam.z = r * std::sin(phi);
+	reposcam = vecrotate(reposcam, zvectheta, zvecphi);
 	poscam = add_vectors(cenposcam, reposcam);
-	Vec3 vectoz = { 0,0,1 };
+	Vec3 vectoz = vecrotate({0,0,1}, zvectheta, zvecphi);
 	vecx = normalize_vector(cross_product(vectoz, reposcam));
 	vecy = normalize_vector(cross_product(reposcam, vecx));
 	vecz = normalize_vector(reposcam);
-	//std::cout << vecx.x << "-----" << vecx.y << "-----" << vecx.z << std::endl;
+	Vec3 t1(
+    std::sin(phi) * std::cos(theta),
+	std::sin(phi) * std::sin(theta),
+	std::cos(phi)
+	);
 
-	if (totar == true) {
 
-		cenposcam = add_vectors(cenposcam, scalar_multiply(variable_threshold1(0.05 * 60 * deltatime), (subtract_vectors(target, cenposcam))));
-		circen = add_vectors(circen, scalar_multiply(variable_threshold1(0.05 * 120 * deltatime), (subtract_vectors(target, circen))));
-		if (vector_length(subtract_vectors(target, cenposcam)) < pow(10, -14)) {
-			totar = false;
+}
+void StarMap::shiptakeof() {
+	std::map<Parameterofship, Parameterofship> mergedMap;
+	for (auto& aship : shipwaittotakeof) {
+		auto it = mergedMap.find(aship);
+		if (it != mergedMap.end()) {
+			// 如果key存在，则累加其他参数
+			it->second.number += aship.number;
+			it->second.loadmess += aship.loadmess;
+			it->second.fuelmess += aship.fuelmess;
+			it->second.volatilesmess += aship.volatilesmess;
+		} else {
+			// 如果key不存在，则插入新的entry
+			mergedMap[aship] = aship;
 		}
 	}
+	shipwaittotakeof.clear();
+	for (const auto& entry : mergedMap) {
+		const auto& aship = entry.second;
+		add_ship_into_route(aship.fnum, aship.znum, aship.number, aship.category, aship.dir, aship.v, aship.loadmess, aship.fuelmess, aship.volatilesmess,aship.planetnum);
+	}
 }
-
-void StarMap::add_ship_into_route(int number1, int number2, int numberofship, int cat, bool dir, double v, double m1, double m2, double m3) {
+void StarMap::add_ship_into_route(int number1, int number2, int numberofship, int cat, bool dir, double v, double m1, double m2, double m3,int pnum) {
 	int sm;
 	int bm;
 
@@ -1154,21 +1254,21 @@ void StarMap::add_ship_into_route(int number1, int number2, int numberofship, in
 			bm = number2;
 			sm = number1;
 		}
-		if (std::find_if(stars.begin(), stars.end(), [sm](const Star& d) { return d.number == sm; }) != stars.end() && std::find_if(stars.begin(), stars.end(), [bm](const Star& d) { return d.number == bm; }) != stars.end()) {
+		if (std::find_if(stars.begin(), stars.end(), [sm](const StarVe& d) { return d.number == sm; }) != stars.end() && std::find_if(stars.begin(), stars.end(), [bm](const StarVe& d) { return d.number == bm; }) != stars.end()) {
 			auto it = std::find_if(routes.begin(), routes.end(),
 				[sm, bm](const Route& d) {
 					return d.origin.number == sm && d.destin.number == bm;
 				});
-			Star astar = stars[std::distance(stars.begin(), std::find_if(stars.begin(), stars.end(), [sm](const Star& d) { return d.number == sm; }))];//需要处理不存在恒星。。。。但我暂时懒得
-			Star bstar = stars[std::distance(stars.begin(), std::find_if(stars.begin(), stars.end(), [bm](const Star& d) { return d.number == bm; }))];
+			StarVe astar = stars[std::distance(stars.begin(), std::find_if(stars.begin(), stars.end(), [sm](const StarVe& d) { return d.number == sm; }))];//需要处理不存在恒星。。。。但我暂时懒得
+			StarVe bstar = stars[std::distance(stars.begin(), std::find_if(stars.begin(), stars.end(), [bm](const StarVe& d) { return d.number == bm; }))];
 			double dis = vector_length(subtract_vectors(astar.absolute_pos, bstar.absolute_pos));
-			Starship ship = Starship(numberofship, cat, dir, timeingame + dis / v, m1, m2, m3, timeingame, v);
+			Starship ship = Starship(numberofship, cat, dir, timeingame + dis / v, m1, m2, m3, timeingame, v,pnum);
 			if (it != routes.end()) {
 
 				it->ships.push_back(ship);
 			} else {
-				Star ostar = stars[std::distance(stars.begin(), std::find_if(stars.begin(), stars.end(), [sm](const Star& d) { return d.number == sm; }))];//同上
-				Star dstar = stars[std::distance(stars.begin(), std::find_if(stars.begin(), stars.end(), [bm](const Star& d) { return d.number == bm; }))];
+				StarVe ostar = stars[std::distance(stars.begin(), std::find_if(stars.begin(), stars.end(), [sm](const StarVe& d) { return d.number == sm; }))];//同上
+				StarVe dstar = stars[std::distance(stars.begin(), std::find_if(stars.begin(), stars.end(), [bm](const StarVe& d) { return d.number == bm; }))];
 				Route route = Route(ostar, dstar);
 				route.ships.push_back(ship);
 				route.show = 0;
@@ -1211,12 +1311,16 @@ void StarMap::sortsatrsbydistance() {//待优化
 	stars.insert(stars.end(), starsLessThan10.begin(), starsLessThan10.end());*/
 }
 
-void StarMap::update_stars() {//右键边栏目标确定，双击移动目标确定，可能完善
+void StarMap::update_and_draw_stars() {//右键边栏目标确定，双击移动目标确定，可能完善
+	lastfollowplanet = followplanet;
+	lasttargetplanet = targetplanet;
 	sortsatrsbydistance();
 	int nearstars = 0;
 	int mouseX, mouseY;
+	int nplant=0;
 	const Uint32 buttons = SDL_GetMouseState(&mouseX, &mouseY);
 	//double maxr = 0;
+	Vec3 cirz = vecrotate({0,0,1},cirtheta,cirphi);
 	for (auto& star : stars) {
 		//maxr = std::max(maxr,std::sqrt(pow(star.absolute_pos.x,2)+ pow(star.absolute_pos.y, 2)));
 		Vec3 relative_pos = subtract_vectors(star.absolute_pos, poscam);
@@ -1226,21 +1330,15 @@ void StarMap::update_stars() {//右键边栏目标确定，双击移动目标确
 		double projx = dot_product(relative_pos, vecx);
 		double projy = dot_product(relative_pos, vecy);
 		double projz = dot_product(relative_pos, vecz);
-		double starrad = width / std::sqrt(variable_threshold001(pow((star.distance / star.radius), 2) - 1));
-		double ll = ll = 90 * pow(variable_threshold00(0.7568915 - 0.08115159 * log(star.distance)), 3) * pow(star.power, 1 / 7.0) * width / 1920;
-		if (ll > height / 1.5) {
-			ll = height / 1.5;
-		}
+
 
 		double screenx = width * (0.5 - 0.5 * projx / projz);
 		double screeny = height * (0.5 - 0.5 * width / double(height) * projy / projz);
 		star.screen_pos = { static_cast<int>(screenx), static_cast<int>(screeny) };
 		star.depth = -projz;
 		if (star.needtoshowpos == true) {
-			Vec3 zpos;
-			zpos.x = star.absolute_pos.x;
-			zpos.y = star.absolute_pos.y;
-			zpos.z = circen.z;
+			Vec3 zpos = subtract_vectors(star.absolute_pos, scalar_multiply(dot_product(subtract_vectors(star.absolute_pos, circen), cirz), cirz));
+
 			Vec3 zrelative_pos = subtract_vectors(zpos, poscam);
 			double zx = dot_product(zrelative_pos, vecx);
 			double zy = dot_product(zrelative_pos, vecy);
@@ -1250,41 +1348,275 @@ void StarMap::update_stars() {//右键边栏目标确定，双击移动目标确
 			star.zpoint = { static_cast<int>(zscreenx), static_cast<int>(zscreeny) };
 			star.zpdep = -zz;
 		}
+	}
+	if (showcircle) {
+		for (auto& star : stars) {
+			if (vector_length(subtract_vectors(circen,star.absolute_pos))<=25 && (star.depth > 0 || star.zpdep > 0) && star.needtoshowpos == true && star.type == 0 && showvertical == 1) {
+				double x = star.screen_pos.x;
+				double y = star.screen_pos.y;
+				double d = star.depth;
+				if (d > 0 && star.zpdep < 0) {
+					star.zpoint.x = x - (star.zpoint.x - x) * double(d - star.zpdep) / variable_threshold00(double(d));
+					star.zpoint.y = y - (star.zpoint.y - y) * double(d - star.zpdep) / variable_threshold00(double(d));
+				}
+				if (d < 0 && star.zpdep > 0) {
+					x = star.zpoint.x - (x - star.zpoint.x) * double(star.zpdep - d) / variable_threshold00((star.zpdep));
+					y = star.zpoint.y - (y - star.zpoint.y) * double(star.zpdep - d) / variable_threshold00((star.zpdep));
+				}
+				if ((dot_product(cirz, subtract_vectors(circen, poscam))) / (dot_product(cirz, subtract_vectors(circen, star.absolute_pos))) >= 0) {
+					SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
+					SDL_RenderDrawLine(renderer, x, y, star.zpoint.x, star.zpoint.y);
+				} else if ((dot_product(cirz, subtract_vectors(circen, poscam))) / (dot_product(cirz, subtract_vectors(circen, star.absolute_pos))) < 0) {
+					SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
+					drawDashedLine(renderer, x, y, star.zpoint.x, star.zpoint.y, 10);
+				}
+			}
+		}
+	}
+	for (auto& star : stars) {
+		double ll = 280 * pow(star.distance, -(0.6 + star.distance / 11000.0)) * pow(star.power, 1 / 4.0) * width / 1920;
+
+		double starrad = width / std::sqrt(variable_threshold001(pow((star.distance / star.radius), 2) - 1));
+
+		if (ll > height / 1.8) {
+			ll = height / 1.8;
+		}
+		double screenx = star.screen_pos.x;
+		double screeny = star.screen_pos.y;
 		if (star.screen_pos.x >= 0 && star.screen_pos.x < width &&
-			star.screen_pos.y >= 0 && star.screen_pos.y < height && star.depth>0 && (mouseX < (messagex))) {
-			if ((buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) && star.type == 0 && !menubutton.ProcessEvent(0, 0, 0.1 * width, 0.1 * height, 1) && !menubutton._bMouseOnButton) {
-				if ((mouseX - screenx) * (mouseX - screenx) + (mouseY - screeny) * (mouseY - screeny) < pow((std::max(ll / 8, starrad)), 2)) {
+			star.screen_pos.y >= 0 && star.screen_pos.y < height && star.depth>0 && mousestorey<=0 && mouseX < messagex) {
+			if ((buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) && star.type == 0 && !menubutton.ProcessEvent(0, 0, width / 30.0, width / 30.0, 1) && !menubutton._bMouseOnButton) {
+				if ((mouseX - screenx) * (mouseX - screenx) + (mouseY - screeny) * (mouseY - screeny) < std::max(pow((std::max(ll / 8, starrad)), 2), 4.0)) {
 					nearstars++;
 					showmessage = true;
-					targetname = star.number;
-					targetcolor = kelvin_to_rgb(star.temperature);
-					targetcloud = star.dysondensity;
+					rightclickstar = star;
+					
 				}
 				if (nearstars == 0) {
 					showmessage = false;
 				}
+				planetmessage = 0;
 			}
 			if (doubleclick == true) {
-				if ((mouseX - screenx) * (mouseX - screenx) + (mouseY - screeny) * (mouseY - screeny) < pow((std::max(ll / 8, starrad)), 2) && star.type == 0) {
+				if ((mouseX - screenx) * (mouseX - screenx) + (mouseY - screeny) * (mouseY - screeny) < std::max(pow((std::max(ll / 8, starrad)), 2), 4.0) && star.type == 0) {
 					totar = true;
-					target = star.absolute_pos;
+					toplanet = false;
+					targetstar = star;
 				}
 			}
-			if ((mouseX - screenx) * (mouseX - screenx) + (mouseY - screeny) * (mouseY - screeny) < pow((std::max(ll / 8, starrad)), 2) && star.type == 0 && !menubutton.ProcessEvent(0, 0, 0.1 * width, 0.1 * height, 1)) {
-				std::string str = u8"恒星" + std::to_string(star.number) + "\n" + u8"半径:" + std::to_string(star.radius / 0.000016) + u8"天文单位" + "\n" + u8"功率:" + std::to_string(star.power) + u8"倍太阳";
+			if ((mouseX - screenx) * (mouseX - screenx) + (mouseY - screeny) * (mouseY - screeny) < std::max(pow((std::max(ll / 8, starrad)), 2), 4.0) && star.type == 0 && !menubutton.ProcessEvent(0, 0, width / 30.0, width / 30.0, 1)) {
+				std::string str = convertChar8ArrayToString(u8"恒星") + std::to_string(star.number) + "\n" + convertChar8ArrayToString(u8"半径:") + std::to_string(star.radius / 0.000016) + convertChar8ArrayToString(u8"天文单位") + "\n" + convertChar8ArrayToString(u8"功率:") + std::to_string(star.power) + convertChar8ArrayToString(u8"倍太阳") + std::to_string(ll);
 				hovermessage.ProcessEvent(str, height / 70.0, width, height);
 			}
 		}
+		//draw
+		if (vector_length(subtract_vectors(star.absolute_pos, targetstar.absolute_pos)) < 0.00000000000000001) {
+			for (auto& planet : star.planets) {
+				{
+
+					Vec3 relative_pos = subtract_vectors(planet.absolute_pos, poscam);
+					planet.relative_pos = relative_pos;
+					planet.distance = vector_length(relative_pos);
+
+					double projx = dot_product(relative_pos, vecx);
+					double projy = dot_product(relative_pos, vecy);
+					double projz = dot_product(relative_pos, vecz);
+					double screenx = width * (0.5 - 0.5 * projx / projz);
+					double screeny = height * (0.5 - 0.5 * width / double(height) * projy / projz);
+					planet.screen_pos = { static_cast<int>(screenx), static_cast<int>(screeny) };
+					planet.depth = -projz;
+
+				}
+				if (planet.orbit_r / planet.distance > 1 / 100.0) {
+
+					if (planet.screen_pos.x >= 0 && planet.screen_pos.x < width &&
+						planet.screen_pos.y >= 0 && planet.screen_pos.y < height && planet.depth>0) {
+						drawFilledCircle(renderer, planet.screen_pos.x, planet.screen_pos.y, 2, { 0,0,255,150 });
+					}
+
+					static std::vector<Opoint> orbit(500);
+					if (showorbit) {
+						for (size_t i = 0; i < orbit.size(); i++) {
+							double rot;
+							if (!menubutton._bPressState && stop._bPressState) {
+								rot = -2 * PI * i / orbit.size() + (timeingame - deltatime * timerate) * sqrt(6.6743 * pow(10, -11) * star.StarData.GetMass() * pow(planet.orbit_r * 9460730472580800, -3));
+							} else {
+								rot = -2 * PI * i / orbit.size() + (timeingame)*sqrt(6.6743 * pow(10, -11) * star.StarData.GetMass() * pow(planet.orbit_r * 9460730472580800, -3));
+							}
+							orbit[i].absolute_pos = add_vectors(star.absolute_pos, scalar_multiply(planet.orbit_r, vec90rotate(rot, planet.theta, planet.phi)));
+							Vec3 relative_pos = subtract_vectors(orbit[i].absolute_pos, poscam);
+							orbit[i].relative_pos = relative_pos;
+							orbit[i].distance = vector_length(relative_pos);
+							//std::cout << star.distance << std::endl;
+							double projx = dot_product(relative_pos, vecx);
+							double projy = dot_product(relative_pos, vecy);
+							double projz = dot_product(relative_pos, vecz);
+
+							double screenx = width * (0.5 - 0.5 * projx / projz);
+							double screeny = height * (0.5 - 0.5 * width / double(height) * projy / projz);
+							orbit[i].screen_pos = { static_cast<int>(screenx), static_cast<int>(screeny) };
+							//std::cout<< screenx << screeny<<std::endl;
+							orbit[i].depth = -projz;
+						}
+						for (size_t i = 1; i < orbit.size(); i++) {
+							Opoint tpoint = orbit[i];
+							Opoint lpoint = orbit[i - 1];
+
+							if (((tpoint.screen_pos.x >= 0 && tpoint.screen_pos.x < width &&
+								tpoint.screen_pos.y >= 0 && tpoint.screen_pos.y < height && tpoint.depth>0) && (lpoint.screen_pos.x >= 0 && lpoint.screen_pos.x < width &&
+									lpoint.screen_pos.y >= 0 && lpoint.screen_pos.y < height && lpoint.depth>0))) {
+								int col = 255 * (orbit.size() - i) / double(orbit.size());
+								SDL_SetRenderDrawColor(renderer, 0, 174, 255, col);
+								SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+								SDL_RenderDrawLine(renderer, lpoint.screen_pos.x, lpoint.screen_pos.y, tpoint.screen_pos.x, tpoint.screen_pos.y);
+
+							}
+
+
+						}
+					}
+				}
+				{
+					double rot = timeingame * sqrt(6.6743 * pow(10, -11) * star.StarData.GetMass() * pow(planet.orbit_r * 9460730472580800, -3));
+					planet.absolute_pos = add_vectors(star.absolute_pos, scalar_multiply(planet.orbit_r, vec90rotate(rot, planet.theta, planet.phi)));
+				}
+				if (planet.orbit_r / planet.distance > 1 / 100.0) {
+					if (mousestorey <= 0 && mouseX < messagex) {
+						if (doubleclick == true) {
+							if ((mouseX - planet.screen_pos.x) * (mouseX - planet.screen_pos.x) + (mouseY - planet.screen_pos.y) * (mouseY - planet.screen_pos.y) < 9) {
+								toplanet = 1;
+								followplanet = planet.number;
+							}
+						}
+
+						if ((mouseX - planet.screen_pos.x) * (mouseX - planet.screen_pos.x) + (mouseY - planet.screen_pos.y) * (mouseY - planet.screen_pos.y) < 9 && mousestorey <= 0 && !menubutton.ProcessEvent(0, 0, width / 30.0, width / 30.0, 1)) {
+							std::string str = convertChar8ArrayToString(u8"planet") + std::to_string(planet.number);
+							hovermessage.ProcessEvent(str, height / 70.0, width, height);
+							if ((buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) && !menubutton.ProcessEvent(0, 0, width / 30.0, width / 30.0, 1) && !menubutton._bMouseOnButton) {
+								rightclickplanet = planet;
+								rightclickstar = star;
+								planetmessage = true;
+								nplant+=1;
+							}
+						}
+					}
+					if (lastfollowplanet != followplanet) {
+						onplanet = 0;
+					}
+					if (followplanet >= 0 && followplanet == planet.number) {
+
+
+						targetplanet = planet.absolute_pos;
+					}
+				}
+
+			}
+		}
+		
+		if (star.screen_pos.x >= 0 && star.screen_pos.x < width &&
+			star.screen_pos.y >= 0 && star.screen_pos.y < height && star.depth>0 && star.type == 0) {
+			SDL_Color color = ScaleSDLColor(pow(star.power, 1.0 / 8.0) / 8.0 / (variable_threshold001(100 * (star.distance)) / 100), kelvin_to_rgb(star.temperature));
+			SDL_Color color0 = kelvin_to_rgb(star.temperature);
+			double  starrad = width / sqrt(variable_threshold001(pow((star.distance / star.radius), 2) - 1));
+			if (starrad >= 1) {
+				drawFilledCircle(renderer, star.screen_pos.x, star.screen_pos.y, int(starrad), color0); //恒星本体，原色
+			} else {
+				SDL_Color acolor = ScaleSDLColor(variable_threshold1(ll / 7), color0);
+				SDL_SetRenderDrawColor(renderer, acolor.r, acolor.g, acolor.b, acolor.a);
+				SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_ADD);
+				SDL_RenderDrawPoint(renderer, star.screen_pos.x, star.screen_pos.y);//处理过远不显示的情况
+				SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+			}
+			SDL_Color AA = { 0, 0, 0, 255 };
+
+
+
+			SDL_Texture* modified_image = tieimg[3];
+
+			if (ll > height / 1.5) {
+				ll = height / 1.5;
+			}
+			if (ll > 128) {
+				modified_image = tieimg[0];
+			} else if (ll > 64) {
+				modified_image = tieimg[1];
+			} else if (ll > 32) {
+				modified_image = tieimg[2];
+			} else if (ll <= 32) {
+				modified_image = tieimg[3];
+			}
+
+			AA.r = color0.r;
+			AA.g = color0.g;
+			AA.b = color0.b;
+			AA.a = static_cast<uint8_t>(255 * 2 * (0.5 - 0.5 * tanh(0.05 * log1p(starrad))));
+
+
+			if (ll > 7) {
+				SDL_Rect dest_rect = { int(star.screen_pos.x - ll / 2 + 1), int(star.screen_pos.y - ll / 2 + 1), int(ll), int(ll) };
+				renderTextureWithColor(renderer, modified_image, AA, dest_rect);
+
+				if (ll > 20 && starrad < 1) {
+					ll /= 3.0 / std::min(1.0, 0.1 / starrad);
+					if (ll > 7) {
+						dest_rect = { int(star.screen_pos.x - ll / 2 + 1), int(star.screen_pos.y - ll / 2 + 1), int(ll), int(ll) };
+						renderTextureWithColor(renderer, modified_image, { 255,255,255,static_cast<unsigned char>(std::min(255,int(255 * ll / 20.0))) }, dest_rect);
+					}
+				}
+
+
+
+			}
+		}
+
+
+		if (star.type == 1 && star.depth > 0) {
+			double ll = std::min((width / sqrt(variable_threshold00(pow((star.distance / star.radius), 2) - 1))), double(2 * width)) * width / 1920;
+			SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_ADD);
+			drawFilledCircle(renderer, star.screen_pos.x, star.screen_pos.y, ll, { 200,0,200,50 });
+			SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+
+		}
 
 	}
-
+	if (nplant > 0) {
+		showmessage = 1;
+		planetmessage = 1;
+	}
 
 
 }
 
+
 void StarMap::update_opoints() {
+	int i = 0;
+	for (double r = 1; r < 26; r *= 1.174618944) {
+		for (double the = 0; the < 2 * PI; the += 2 * PI / 100.0) {
+			Vec3 avec(r * std::cos(the), r * std::sin(the), 0);
+			avec =add_vectors(circen, vecrotate(avec, cirtheta, cirphi));
+			Opoint apoint = {
+				avec,
+				Vec3(), 0, 0,{0, 0}
+			};
+			opoints[i]=apoint;
+			i++;
+		}
+	}
+	for (double the = 0; the < 2 * PI; the += 2 * PI / 8) {
+		for (int r = 0; r < 26; r += 1) {
+			Vec3 avec(r * std::cos(the), r * std::sin(the), 0);
+			avec = add_vectors(circen, vecrotate(avec, cirtheta, cirphi));
+			Opoint apoint = {
+				avec,
+				Vec3(), 0, 0,{0, 0}
+			};
+			opoints[i] = apoint;
+			i++;
+		}
+	}
 	for (auto& opoint : opoints) {
-		Vec3 relative_pos = add_vectors(subtract_vectors(opoint.absolute_pos, poscam), circen);
+		Vec3 relative_pos = subtract_vectors(opoint.absolute_pos, poscam);
 		opoint.relative_pos = relative_pos;
 		opoint.distance = vector_length(relative_pos);
 		//std::cout << star.distance << std::endl;
@@ -1299,7 +1631,121 @@ void StarMap::update_opoints() {
 	}
 }
 
-void StarMap::updata_ship() {
+
+
+void StarMap::render() {
+	static bool lastopen;
+	static bool open;
+	open = menubutton.ProcessEvent(0, 0, width / 30.0, width / 30.0, 1);
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+
+
+
+	SDL_RenderClear(renderer);
+
+
+	if (showcircle == 1) {
+		draw_opoints();
+	}
+	if (ShipAndRKKV._bPressState) {
+		updata_and_draw_ships();
+	}
+	update_and_draw_stars();
+
+
+	draw_time(timeingame);
+
+	if (open) {//menu open
+		SDL_Rect backgroundrect = { 0,0,width,height };
+
+		SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_ADD);
+		SDL_SetRenderDrawColor(renderer, 100, 100, 100, 100);
+		SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+		SDL_RenderFillRect(renderer, &backgroundrect);
+
+	
+		ifexit = exitbutton.ProcessEvent(0.6 * width, 0.3 * height + menuscolly, 0.2 * width, 0.07 * height, 1);
+		ShipAndRKKV.ProcessEvent(0);
+
+		coordinate.ProcessEvent(0);
+		orbit.ProcessEvent(0);
+		addtimerate.ProcessEvent(0);
+		stop.ProcessEvent(0);
+		subtimerate.ProcessEvent(0);
+
+
+		
+
+	}
+	if (!open) {
+		if(messagex >= width- 0.5*width * messagewidthrate)
+		{
+			showcircle = coordinate.ProcessEvent((1 - 5 / 30.0) * width, height - width / 30.0, width / 30.0, width / 30.0, 1);
+			showorbit = orbit.ProcessEvent((1 - 1 / 30.0) * width, height - width / 30.0, width / 30.0, width / 30.0, 1);
+			showvertical = showcircle;
+			ShipAndRKKV.ProcessEvent((1 - 1 / 30.0) * width, height - 2 * width / 30.0, width / 30.0, width / 30.0, 1);
+			if (addtimerate.ProcessEvent((1 - 1.5 / 30.0) * width, 0, width / 30.0, width / 30.0, 1)) {
+				addtimerate._bPressState = 0;
+				timerate *= 1.584893;
+			}
+			if (subtimerate.ProcessEvent((1 - 4.5 / 30.0) * width, 0, width / 30.0, width / 30.0, 1)) {
+				subtimerate._bPressState = 0;
+				timerate /= 1.584893;
+			}
+			stop.ProcessEvent((1 - 3 / 30.0) * width, 0, width / 30.0, width / 30.0, 1);
+			if (stop._bPressState == 1) {
+				stop._MapName = "pause.png";
+			} else {
+				stop._MapName = "continue.png";
+			}
+		}
+		else {
+			coordinate.ProcessEvent(0);
+			orbit.ProcessEvent(0);
+			addtimerate.ProcessEvent(0);
+			stop.ProcessEvent(0);
+			subtimerate.ProcessEvent(0);
+		}
+
+
+		exitbutton.ProcessEvent(0);
+		if (messagex >= width - 0.5 * width * messagewidthrate) {
+			std::string ratetext = std::to_string(timerate);//时间显示
+			if (timerate < 10000) {
+				ratetext = "x" + ratetext.substr(0, ratetext.length() - 4);
+			} else if (timerate < 10000000) {
+				ratetext = "x" + std::to_string(int(timerate) / 1000) + "K";
+			} else {
+				ratetext = "x" + std::to_string(long long int(timerate) / 1000000) + "M";
+			}
+			showtimeingame.Draw(renderer, ratetext, height / 32.0, width, height, 0.92, 0.06, "Assets/Fonts/FileDeletion.ttf");
+		}
+	}
+	menubutton.DrawButtonPress(renderer);
+	coordinate.DrawButtonWithoutRect_blue(renderer);
+	orbit.DrawButtonWithoutRect_blue(renderer);
+	exitbutton.DrawButtonRelease_TextLeftAndLineDown(renderer);
+	addtimerate.DrawButtonWithoutRect_grey(renderer);
+	subtimerate.DrawButtonWithoutRect_grey(renderer);
+	ShipAndRKKV.DrawButtonWithoutRect_blue(renderer);
+	stop.DrawButtonWithoutRect_grey(renderer);
+	lastopen = open;
+	if (!open) {
+		draw_info_panel();
+	}
+	hovermessage.Draw(renderer, height / 70.0);
+	SDL_RenderPresent(renderer);
+}
+
+void  StarMap::renderTextureWithColor(SDL_Renderer* renderer, SDL_Texture* texture, SDL_Color color, SDL_Rect destRect) {
+	SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+	SDL_SetTextureColorMod(texture, color.r, color.g, color.b);
+	SDL_SetTextureAlphaMod(texture, color.a);
+	SDL_RenderCopy(renderer, texture, nullptr, &destRect);
+}
+
+void StarMap::updata_and_draw_ships() {
 	for (std::vector<Route>::iterator route = routes.begin(); route != routes.end();) {
 		{
 			Vec3 relative_pos = subtract_vectors(route->origin.absolute_pos, poscam);
@@ -1353,188 +1799,11 @@ void StarMap::updata_ship() {
 			route++;
 		}
 	}
-}
-
-void StarMap::render() {
-	static bool lastopen;
-	static bool open;
-	open = menubutton.ProcessEvent(0, 0, 0.1 * width, 0.1 * height, 1);
-	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-
-
-
-	SDL_RenderClear(renderer);
-
-
-	if (showcircle == 1) {
-		draw_opoints();
-	}
-	if (ShipAndRKKV._bPressState) {
-		draw_ships();
-	}
-	draw_stars();
-
-
-	draw_time(timeingame);
-
-	if (open) {
-		SDL_Rect backgroundrect = { 0,0,width,height };
-
-		SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_ADD);
-		SDL_SetRenderDrawColor(renderer, 100, 100, 100, 100);
-		SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-
-		SDL_RenderFillRect(renderer, &backgroundrect);
-		showcircle = coordinate.ProcessEvent(0.2 * width, 0.3 * height + menuscolly, 0.2 * width, 0.07 * height, 1);
-		ifexit = exitbutton.ProcessEvent(0.6 * width, 0.3 * height + menuscolly, 0.2 * width, 0.07 * height, 1);
-		ShipAndRKKV.ProcessEvent(0.2 * width, 0.5 * height + menuscolly, 0.2 * width, 0.07 * height, 1);
-
-
-		addtimerate.ProcessEvent(0.2 * width, 0.3 * height, 0.1 * width, 0.07 * height, 0);
-		stop.ProcessEvent(0.85 * width, 0, 0.1 * width, 0.07 * height, 0);
-		subtimerate.ProcessEvent(0.3 * width, 0.3 * height, 0.1 * width, 0.07 * height, 0);
-
-
-		showvertical = showcircle;
-
-	}
-	if (!open) {
-		coordinate.ProcessEvent(0.2 * width, 0.3 * height + menuscolly, 0.2 * width, 0.07 * height, 0);
-		exitbutton.ProcessEvent(0.6 * width, 0.3 * height + menuscolly, 0.2 * width, 0.07 * height, 0);
-		if (addtimerate.ProcessEvent(0.95 * width, 0, 0.05 * width, 0.07 * height, 1)) {
-			addtimerate._bPressState = 0;
-			timerate *= 1.584893;
-		}
-		if (subtimerate.ProcessEvent(0.8 * width, 0, 0.05 * width, 0.07 * height, 1)) {
-			subtimerate._bPressState = 0;
-			timerate /= 1.584893;
-		}
-		stop.ProcessEvent(0.85 * width, 0, 0.1 * width, 0.07 * height, 1);
-		std::string ratetext = std::to_string(timerate);//时间显示
-		SDL_Color text_color = { 255, 255, 255, 255 };
-		TTF_Font* font = TTF_OpenFont("Assets/Fonts/FileDeletion.ttf", height / 32.0);
-		SDL_Surface* surface = TTF_RenderText_Blended(font, ratetext.c_str(), text_color);
-		SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-		int text_width = surface->w;//单行字尺寸
-		int text_height = surface->h;
-		SDL_FreeSurface(surface);
-
-		SDL_Rect text_rect = { width * 0.9 - 0.5 * text_width,0.07 * height, text_width, text_height };
-		SDL_RenderCopy(renderer, texture, nullptr, &text_rect);
-		SDL_DestroyTexture(texture);
-
-		TTF_CloseFont(font);
-		ShipAndRKKV.ProcessEvent(0.2 * width, 0.5 * height + menuscolly, 0.2 * width, 0.07 * height, 0);
-	}
-	menubutton.DrawButtonRelease_TextLeftAndLineDown(renderer);
-	coordinate.DrawButtonRelease_TextLeftAndLineDown(renderer);
-	exitbutton.DrawButtonRelease_TextLeftAndLineDown(renderer);
-	addtimerate.DrawButtonRelease_TextLeftAndLineDown(renderer);
-	subtimerate.DrawButtonRelease_TextLeftAndLineDown(renderer);
-	ShipAndRKKV.DrawButtonRelease_TextLeftAndLineDown(renderer);
-	stop.DrawButtonRelease_TextLeftAndLineDown(renderer);
-	lastopen = open;
-	if (!open) {
-		draw_info_panel();
-	}
-	hovermessage.Draw(renderer, height / 70.0);
-	SDL_RenderPresent(renderer);
-}
-
-void  StarMap::renderTextureWithColor(SDL_Renderer* renderer, SDL_Texture* texture, SDL_Color color, SDL_Rect destRect) {
-	SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
-	SDL_SetTextureColorMod(texture, color.r, color.g, color.b);
-	SDL_SetTextureAlphaMod(texture, color.a);
-	SDL_RenderCopy(renderer, texture, nullptr, &destRect);
-}
-
-
-
-void StarMap::draw_stars() {
-	for (auto& star : stars) {
-		if (star.screen_pos.x >= 0 && star.screen_pos.x < width &&
-			star.screen_pos.y >= 0 && star.screen_pos.y < height && star.depth>0 && star.type == 0) {
-			SDL_Color color = ScaleSDLColor(pow(star.power, 1.0 / 8.0) / 8.0 / (variable_threshold001(100 * (star.distance)) / 100), kelvin_to_rgb(star.temperature));
-			SDL_Color color0 = kelvin_to_rgb(star.temperature);
-			double  starrad = width / sqrt(variable_threshold001(pow((star.distance / star.radius), 2) - 1));
-			double ll = 90 * pow(0.7568915 - 0.08115159 * log(star.distance), 3) * pow(star.power, 1 / 7.0) * width / 1920;
-			if (ll < 0.05) {
-				ll = 0.05 / (2 - 20 * ll);
-			}
-			if (starrad >= 1) {
-				drawFilledCircle(renderer, star.screen_pos.x, star.screen_pos.y, int(starrad), color0); //恒星本体，原色
-			} else {
-				SDL_Color acolor = ScaleSDLColor(pow(variable_threshold1(ll), 0.2), color0);
-				SDL_SetRenderDrawColor(renderer, acolor.r, acolor.g, acolor.b, acolor.a);
-				SDL_RenderDrawPoint(renderer, star.screen_pos.x, star.screen_pos.y);//处理过远不显示的情况
-			}
-			SDL_Color AA = { 0, 0, 0, 255 };
-
-			//星星
-			//星芒
-			SDL_Texture* modified_image = tieimg[3];
-
-			if (ll > height / 1.5) {
-				ll = height / 1.5;
-			}
-			if (ll > 128) {
-				modified_image = tieimg[0];
-			} else if (ll > 64) {
-				modified_image = tieimg[1];
-			} else if (ll > 32) {
-				modified_image = tieimg[2];
-			} else if (ll <= 32) {
-				modified_image = tieimg[3];
-			}
-
-			AA.r = color0.r;
-			AA.g = color0.g;
-			AA.b = color0.b;
-			AA.a = static_cast<uint8_t>(255 * 2 * (0.5 - 0.5 * tanh(0.05 * log1p(starrad))));
-
-
-			if (ll > 1) {
-				SDL_Rect dest_rect = { int(star.screen_pos.x - ll / 2 + 1), int(star.screen_pos.y - ll / 2 + 1), int(ll), int(ll) };
-				renderTextureWithColor(renderer, modified_image, AA, dest_rect);
-
-
-
-			}
-		}
-		if ((star.depth > 0 || star.zpdep > 0) && star.needtoshowpos == true && star.type == 0 && showvertical == 1) {
-			if (star.depth > 0 && star.zpdep < 0) {
-				star.zpoint.x = star.screen_pos.x - (star.zpoint.x - star.screen_pos.x) * double(star.depth - star.zpdep) / variable_threshold00(double(star.depth));
-				star.zpoint.y = star.screen_pos.y - (star.zpoint.y - star.screen_pos.y) * double(star.depth - star.zpdep) / variable_threshold00(double(star.depth));
-			}
-			if (star.depth < 0 && star.zpdep > 0) {
-				star.screen_pos.x = star.zpoint.x - (star.screen_pos.x - star.zpoint.x) * double(star.zpdep - star.depth) / variable_threshold00((star.zpdep));
-				star.screen_pos.y = star.zpoint.y - (star.screen_pos.y - star.zpoint.y) * double(star.zpdep - star.depth) / variable_threshold00((star.zpdep));
-			}
-			if ((circen.z - poscam.z) / (circen.z - star.absolute_pos.z) >= 0) {
-				SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
-				SDL_RenderDrawLine(renderer, star.screen_pos.x, star.screen_pos.y, star.zpoint.x, star.zpoint.y);
-			} else if ((circen.z - poscam.z) / (circen.z - star.absolute_pos.z) < 0) {
-				SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
-				drawDashedLine(renderer, star.screen_pos.x, star.screen_pos.y, star.zpoint.x, star.zpoint.y, 10);
-			}
-		}
-
-		if (star.type == 1 && star.depth > 0) {
-			double ll = std::min((width / sqrt(variable_threshold00(pow((star.distance / star.radius), 2) - 1))), double(2 * width)) * width / 1920;
-			SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_ADD);
-			drawFilledCircle(renderer, star.screen_pos.x, star.screen_pos.y, ll, { 200,0,200,50 });
-			SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-
-
-		}
-
-	}
-}
-
-void StarMap::draw_ships() {
-
 	bool fir = 1;
 	for (auto& route : routes) {
+		if (route.origin.number == controlstar.number || route.destin.number == controlstar.number) {
+			route.show = 1;
+		}
 		bool frse = 0;
 		bool emse = 0;
 		bool frat = 0;
@@ -1558,32 +1827,32 @@ void StarMap::draw_ships() {
 			}
 			if (mouson) {
 				fir = 0;
-				if (!menubutton.ProcessEvent()) {
-					std::string str = u8"航线，天体" + std::to_string(route.origin.number) + u8"到天体" + std::to_string(route.destin.number) + "\n" + u8"长:" + std::to_string(vector_length(subtract_vectors(route.origin.absolute_pos, route.destin.absolute_pos))) + u8"光年" + "\n" + u8"当前飞行物" + std::to_string(route.ships.size()) + u8"个";
+				if (!menubutton.ProcessEvent() && mousestorey <= 0) {
+					std::string str = convertChar8ArrayToString(u8"航线，天体") + std::to_string(route.origin.number) + convertChar8ArrayToString(u8"到天体") + std::to_string(route.destin.number) + "\n" + convertChar8ArrayToString(u8"长:") + std::to_string(vector_length(subtract_vectors(route.origin.absolute_pos, route.destin.absolute_pos))) + convertChar8ArrayToString(u8"光年") + "\n" + convertChar8ArrayToString(u8"当前飞行物群") + std::to_string(route.ships.size()) + convertChar8ArrayToString(u8"个");
 					hovermessage.ProcessEvent(str, height / 70.0, width, height);
 				}
 			}
 			route.p = 0;
 			int aaa, bbb;
 			const Uint32 mou = SDL_GetMouseState(&aaa, &bbb);
-			if (mouson == true && (mou & SDL_BUTTON(SDL_BUTTON_LEFT))) {
+			if (mouson == true && (mou & SDL_BUTTON(SDL_BUTTON_LEFT)) && mousestorey <= 0) {
 				route.p = true;
 			}
-			if (!route.p && route.lp && mouson) {
+			if (!route.p && route.lp && mouson && mousestorey <= 0) {
 				route.show = !route.show;
 
 			}
 			route.lp = route.p;
 
 			for (auto& ship : route.ships) {
-				if ((ship.dir == 0 && route.origin.teamname == "fr") || (ship.dir == 1 && route.destin.teamname == "fr")) {
+				if ((ship.dir == 0 && route.origin.teamname <= 0) || (ship.dir == 1 && route.destin.teamname <= 0)) {
 					if (ship.category == 0) {
 						frse = 1;
 					} else if (ship.category == 1 || ship.category == 2) {
 						frat = 1;
 					}
 				}
-				if ((ship.dir == 0 && route.origin.teamname == "em") || (ship.dir == 1 && route.destin.teamname == "em")) {
+				if ((ship.dir == 0 && route.origin.teamname >=1) || (ship.dir == 1 && route.destin.teamname >=1)) {
 					if (ship.category == 0) {
 						emse = 1;
 					} else if (ship.category == 1 || ship.category == 2) {
@@ -1601,10 +1870,10 @@ void StarMap::draw_ships() {
 						color = { 0,255,0,0 };
 					}
 					drawFilledCircle(renderer, ship.shippoint.x, ship.shippoint.y, 2, { color.r,color.g,color.b,150 });
-					double ll = std::min(450 / sqrt(variable_threshold00(pow(vector_length(subtract_vectors(ship.shippos, poscam)), 2) - 1)), 300.0) * width / 1920;
+					double ll = std::min(450 / sqrt(variable_threshold00(pow(vector_length(subtract_vectors(ship.shippos, poscam)), 2) - 1)), 300.0) * width / 1920*(0.6+0.5*tanh(0.5*(log10(ship.loadmess)-10)));
 					SDL_Texture* modified_image = tieimg[3];
-					if (ll > 1024) {
-						ll = 1024;
+					if (ll > height/3.0) {
+						ll = height / 3.0;
 					}
 					if (ll > 128) {
 						modified_image = tieimg[0];
@@ -1617,8 +1886,8 @@ void StarMap::draw_ships() {
 					}
 					SDL_Rect dest_rect = { int(ship.shippoint.x - ll / 2 + 1), int(ship.shippoint.y - ll / 2 + 1), int(ll), int(ll) };
 					renderTextureWithColor(renderer, modified_image, { color.r,color.g,color.b,255 }, dest_rect);
-					if ((aaa - ship.shippoint.x) * (aaa - ship.shippoint.x) + (bbb - ship.shippoint.y) * (bbb - ship.shippoint.y) < pow((std::max(ll / 8, 2.0)), 2) && !menubutton.ProcessEvent()) {
-						std::string str = u8"飞行器" + std::to_string(ship.number) + "\n" + u8"速度:" + std::to_string(ship.v) + u8"倍光速";
+					if ((aaa - ship.shippoint.x) * (aaa - ship.shippoint.x) + (bbb - ship.shippoint.y) * (bbb - ship.shippoint.y) < pow((std::max(ll / 8, 2.0)), 2) && !menubutton.ProcessEvent() && mousestorey <= 0) {
+						std::string str = convertChar8ArrayToString(u8"飞行器集群，数量") + std::to_string(ship.number) + "\n" + convertChar8ArrayToString(u8"速度:") + std::to_string(ship.v) + convertChar8ArrayToString(u8"倍光速");
 						hovermessage.ProcessEvent(str, height / 70.0, width, height);
 					}
 				}
@@ -1687,7 +1956,6 @@ void StarMap::draw_opoints() {
 	for (size_t i = 1; i < opoints.size(); i++) {
 		Opoint tpoint = opoints[i];
 		Opoint lpoint = opoints[i - 1];
-
 		if ((tpoint.screen_pos.x >= 0 && tpoint.screen_pos.x < width &&
 			tpoint.screen_pos.y >= 0 && tpoint.screen_pos.y < height && tpoint.depth>0) && (lpoint.screen_pos.x >= 0 && lpoint.screen_pos.x < width &&
 				lpoint.screen_pos.y >= 0 && lpoint.screen_pos.y < height && lpoint.depth>0)) {
@@ -1698,79 +1966,263 @@ void StarMap::draw_opoints() {
 	}
 }
 
-void StarMap::draw_info_panel() {//报错！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+void StarMap::draw_info_panel() {
 
 	if (messagex <= width) {
+		int mouseXp, mouseYp;
+		const Uint32 mop = SDL_GetMouseState(&mouseXp, &mouseYp);
+		if (mouseXp > messagex) {
+			hovermessage.ProcessEvent("", height / 70.0, width, height);
+		}
 		// 绘制信息面板背景
 		SDL_Rect message_rect = { static_cast<int>(messagex), 0,
 								 static_cast<int>(width * messagewidthrate), height };
-		SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
+		SDL_SetRenderDrawColor(renderer, 10, 10, 10, 200);
 		SDL_RenderFillRect(renderer, &message_rect);
 
 
 
-		// 绘制星球图像
+	
+		if(planetmessage==0)//star
+		{
+			// 绘制星球图像
+			int image_size = static_cast<int>(width * messagewidthrate);
+			SDL_Rect image_rect = { static_cast<int>(messagex),
+				0 + scroll_y, image_size, image_size * 2 / 3.0 };
+			renderTextureWithColor(renderer, mesimg[rightclickstar.dysondensity], kelvin_to_rgb(rightclickstar.temperature), image_rect);
 
-		int image_size = static_cast<int>(width * messagewidthrate);
-		SDL_Rect image_rect = { static_cast<int>(messagex),
-			0 + scroll_y, image_size, image_size * 2 / 3.0 };
-		renderTextureWithColor(renderer, mesimg[targetcloud], targetcolor, image_rect);
+			SDL_RenderCopy(renderer, mesimg[rightclickstar.dysondensity], nullptr, &image_rect);
 
-		SDL_RenderCopy(renderer, mesimg[targetcloud], nullptr, &image_rect);
-
-		// 信息配置
-		std::string aname = std::to_string(targetname);
-		SDL_Color text_color = { 255, 255, 255, 255 };
-		TTF_Font* font = TTF_OpenFont("Assets/Fonts/SJbangkaijianti.ttf", height / 32.0);
-		SDL_Surface* surface = TTF_RenderText_Blended(font, aname.c_str(), text_color);//函数未定义
-		SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-		int text_width = surface->w;//单行字尺寸
-		int text_height = surface->h;
-		SDL_FreeSurface(surface);
-
-		SDL_Rect text_rect = { static_cast<int>(messagex + 10), image_size * 2 / 3.0 + scroll_y, text_width, text_height };
-		SDL_RenderCopy(renderer, texture, nullptr, &text_rect);
-		SDL_DestroyTexture(texture);
-
-		// 绘制详细信息
-		std::vector<std::string> info_lines = UI::SplitStr(star_messages[targetname], '\n');
-		int y_offset = text_height + 30 + image_size * 2 / 3.0 + scroll_y;
-		if (!(info_lines.size() == 1 && info_lines[0] == "")) {
-			for (const auto& line : info_lines) {
-
-				surface = TTF_RenderUTF8_Blended(font, line.c_str(), text_color);
-				texture = SDL_CreateTextureFromSurface(renderer, surface);
-				text_width = surface->w;
-				text_height = surface->h;
-				SDL_FreeSurface(surface);
-
-				text_rect = { static_cast<int>(messagex + 10), y_offset, text_width, text_height };
-				SDL_RenderCopy(renderer, texture, nullptr, &text_rect);
-				SDL_DestroyTexture(texture);
-
-				y_offset += text_height + 5;
+			// 信息配置
+			std::string a = convertChar8ArrayToString(u8"恒星") + std::to_string(rightclickstar.number) + "," + "\n"
+				//+ convertChar8ArrayToString(u8"光谱型:") + rightclickstar.StarData.GetStellarClass().ToString() + "\n"
+				+ convertChar8ArrayToString(u8"演化阶段:") + PhaseToString(rightclickstar.StarData.GetEvolutionPhase()) + "\n"
+				+ convertChar8ArrayToString(u8"半径:") + std::to_string(rightclickstar.radius / 0.000016) + convertChar8ArrayToString(u8"天文单位") + "\n"
+				+ convertChar8ArrayToString(u8"功率:") + std::to_string(rightclickstar.power) + convertChar8ArrayToString(u8"倍太阳");
+			int yy = detailed.DrawLeft(renderer, a, height / 64.0, width, height, static_cast<int>(messagex + 10) / double(width), (image_size * 2 / 3.0 + scroll_y) / height, "Assets/Fonts/FangZhengShuSongJianTi-1.ttf");
+			if(rightclickstar.teamname==0)
+			{
+				if(rightclickstar.number!=controlstar.number)
+				{
+					if (control.ProcessEvent(messagex + 5, yy, width / 15.0, width / 15.0, 1)) {
+						controlstar = rightclickstar;
+						tocontrol = 1;
+						control._bPressState = 0;
+					}
+					if (control._bMouseOnButton) {
+						hovermessage.ProcessEvent(convertChar8ArrayToString(u8"前往控制该恒星,耗时") + std::to_string(vector_length(subtract_vectors(rightclickstar.absolute_pos, controlstar.absolute_pos))) + convertChar8ArrayToString(u8"年。"), height / 60.0, width, height);
+						hovermessage.Draw(renderer, height / 60.0);
+					}
+					control.DrawButtonWithoutRect_grey(renderer);
+					control.ProcessEvent(0);
+					if (sendrkkv.ProcessEvent(messagex + 5, yy + width / 15.0, width / 15.0, width / 15.0, 1)) {
+						bool dir;
+						if (controlstar.number > rightclickstar.number) {
+							dir = 1;
+						} else {
+							dir = 0;
+						}
+						Parameterofship aship{ controlstar.number, rightclickstar.number, 1, 1, dir, 0.8, pow(10,11), 0, 0,-1 };
+						shipwaittotakeof.push_back(aship);
+						sendrkkv._bPressState = 0;
+					}
+					if (sendrkkv._bMouseOnButton) {
+						hovermessage.ProcessEvent(convertChar8ArrayToString(u8"向友方发射rkkv。注意，是友方！！！"), height / 30.0, width, height);
+						hovermessage.Draw(renderer, height / 30.0);
+					}
+					sendrkkv.DrawButtonWithoutRect_grey(renderer);
+					sendrkkv.ProcessEvent(0);
+					if (sendship.ProcessEvent(messagex + 5, yy + 2 * width / 15.0, width / 15.0, width / 15.0, 1)) {
+						bool dir;
+						if (controlstar.number > rightclickstar.number) {
+							dir = 1;
+						} else {
+							dir = 0;
+						}
+						Parameterofship aship{ controlstar.number, rightclickstar.number, 1, 0, dir, 0.4, pow(10,11), 0, 0,-1 };
+						shipwaittotakeof.push_back(aship);
+						sendship._bPressState = 0;
+					}
+					if (sendship._bMouseOnButton) {
+						hovermessage.ProcessEvent(convertChar8ArrayToString(u8"向友方发射飞船。"), height / 60.0, width, height);
+						hovermessage.Draw(renderer, height / 60.0);
+					}
+					sendship.DrawButtonWithoutRect_grey(renderer);
+					sendship.ProcessEvent(0);
+					if (sendlaser.ProcessEvent(messagex + 5, yy + 3 * width / 15.0, width / 15.0, width / 15.0, 1)) {
+						bool dir;
+						if (controlstar.number > rightclickstar.number) {
+							dir = 1;
+						} else {
+							dir = 0;
+						}
+						Parameterofship aship{ controlstar.number, rightclickstar.number, 1, 2, dir, 1, pow(10,11), 0, 0,-1 };
+						shipwaittotakeof.push_back(aship);
+						sendlaser._bPressState = 0;
+					}
+					if (sendlaser._bMouseOnButton) {
+						hovermessage.ProcessEvent(convertChar8ArrayToString(u8"向友方发射戴森光束。注意，是友方！！！"), height / 30.0, width, height);
+						hovermessage.Draw(renderer, height / 30.0);
+					}
+					sendlaser.DrawButtonWithoutRect_grey(renderer);
+					sendlaser.ProcessEvent(0);
+				}
 			}
+			if (rightclickstar.teamname != 0) {
+				
+				if (sendrkkv.ProcessEvent(messagex + 5, yy + width / 15.0, width / 15.0, width / 15.0, 1)) {
+					bool dir;
+					if (controlstar.number > rightclickstar.number) {
+						dir = 1;
+					} else {
+						dir = 0;
+					}
+					Parameterofship aship{ controlstar.number, rightclickstar.number, 1, 1, dir, 0.8, pow(10,11), 0, 0,-1 };
+					shipwaittotakeof.push_back(aship);
+					sendrkkv._bPressState = 0;
+				}
+				if (sendrkkv._bMouseOnButton) {
+					hovermessage.ProcessEvent(convertChar8ArrayToString(u8"向敌方或未被占领星发射rkkv。"), height / 60.0, width, height);
+					hovermessage.Draw(renderer, height / 60.0);
+				}
+				sendrkkv.DrawButtonWithoutRect_grey(renderer);
+				sendrkkv.ProcessEvent(0);
+				if (sendship.ProcessEvent(messagex + 5, yy + 2 * width / 15.0, width / 15.0, width / 15.0, 1)) {
+					bool dir;
+					if (controlstar.number > rightclickstar.number) {
+						dir = 1;
+					} else {
+						dir = 0;
+					}
+					Parameterofship aship{ controlstar.number, rightclickstar.number, 1, 0, dir, 0.4, pow(10,11), 0, 0,-1 };
+					shipwaittotakeof.push_back(aship);
+					sendship._bPressState = 0;
+				}
+				if (sendship._bMouseOnButton) {
+					hovermessage.ProcessEvent(convertChar8ArrayToString(u8"向敌方或未被占领星发射飞船。"), height / 60.0, width, height);
+					hovermessage.Draw(renderer, height / 60.0);
+				}
+				sendship.DrawButtonWithoutRect_grey(renderer);
+				sendship.ProcessEvent(0);
+				if (sendlaser.ProcessEvent(messagex + 5, yy + 3 * width / 15.0, width / 15.0, width / 15.0, 1)) {
+					bool dir;
+					if (controlstar.number > rightclickstar.number) {
+						dir = 1;
+					} else {
+						dir = 0;
+					}
+					Parameterofship aship{ controlstar.number, rightclickstar.number, 1, 2, dir, 1, pow(10,11), 0, 0,-1 };
+					shipwaittotakeof.push_back(aship);
+					sendlaser._bPressState = 0;
+				}
+				if (sendlaser._bMouseOnButton) {
+					hovermessage.ProcessEvent(convertChar8ArrayToString(u8"向敌方或未被占领星发射戴森光束。"), height / 60.0, width, height);
+					hovermessage.Draw(renderer, height / 60.0);
+				}
+				sendlaser.DrawButtonWithoutRect_grey(renderer);
+				sendlaser.ProcessEvent(0);
+			}
+
+		} else {
+			// 绘制星球图像
+			int image_size = static_cast<int>(width * messagewidthrate);
+			SDL_Rect image_rect = { static_cast<int>(messagex),
+				0 + scroll_y, image_size, image_size * 2 / 3.0 };
+			renderTextureWithColor(renderer, mesimg[0], {0,255,0,255}, image_rect);
+
+			SDL_RenderCopy(renderer, mesimg[0], nullptr, &image_rect);
+
+			// 信息配置
+			std::string a = convertChar8ArrayToString(u8"行星") + std::to_string(rightclickplanet.number) ;
+			int yy = detailed.DrawLeft(renderer, a, height / 64.0, width, height, static_cast<int>(messagex + 10) / double(width), (image_size * 2 / 3.0 + scroll_y) / height, "Assets/Fonts/FangZhengShuSongJianTi-1.ttf");
+			if (rightclickstar.teamname == 0) {
+				if (sendrkkv.ProcessEvent(messagex + 5, yy , width / 15.0, width / 15.0, 1)) {
+					bool dir;
+					if (controlstar.number > rightclickstar.number) {
+						dir = 1;
+					} else {
+						dir = 0;
+					}
+					Parameterofship aship{ controlstar.number, rightclickstar.number, 1, 1, dir, 0.8, pow(10,11), 0, 0,rightclickplanet.number };
+					shipwaittotakeof.push_back(aship);
+					sendrkkv._bPressState = 0;
+				}
+				if (sendrkkv._bMouseOnButton) {
+					hovermessage.ProcessEvent(convertChar8ArrayToString(u8"向友方发射rkkv。注意，是友方！！！"), height / 30.0, width, height);
+					hovermessage.Draw(renderer, height / 30.0);
+				}
+				sendrkkv.DrawButtonWithoutRect_grey(renderer);
+				sendrkkv.ProcessEvent(0);
+				if (sendship.ProcessEvent(messagex + 5, yy + 1 * width / 15.0, width / 15.0, width / 15.0, 1)) {
+					bool dir;
+					if (controlstar.number > rightclickstar.number) {
+						dir = 1;
+					} else {
+						dir = 0;
+					}
+					Parameterofship aship{ controlstar.number, rightclickstar.number, 1, 0, dir, 0.4, pow(10,11), 0, 0,rightclickplanet.number };
+					shipwaittotakeof.push_back(aship);
+					sendship._bPressState = 0;
+				}
+				if (sendship._bMouseOnButton) {
+					hovermessage.ProcessEvent(convertChar8ArrayToString(u8"向友方发射飞船。"), height / 60.0, width, height);
+					hovermessage.Draw(renderer, height / 60.0);
+				}
+				sendship.DrawButtonWithoutRect_grey(renderer);
+				sendship.ProcessEvent(0);
+
+			}
+			if (rightclickstar.teamname != 0) {
+				if (sendrkkv.ProcessEvent(messagex + 5, yy, width / 15.0, width / 15.0, 1)) {
+					bool dir;
+					if (controlstar.number > rightclickstar.number) {
+						dir = 1;
+					} else {
+						dir = 0;
+					}
+					Parameterofship aship{ controlstar.number, rightclickstar.number, 1, 1, dir, 0.8, pow(10,11), 0, 0,rightclickplanet.number };
+					shipwaittotakeof.push_back(aship);
+					sendrkkv._bPressState = 0;
+				}
+				if (sendrkkv._bMouseOnButton) {
+					hovermessage.ProcessEvent(convertChar8ArrayToString(u8"向敌方或未被占领星发射rkkv。"), height / 60.0, width, height);
+					hovermessage.Draw(renderer, height / 60.0);
+				}
+				sendrkkv.DrawButtonWithoutRect_grey(renderer);
+				sendrkkv.ProcessEvent(0);
+				if (sendship.ProcessEvent(messagex + 5, yy + 1 * width / 15.0, width / 15.0, width / 15.0, 1)) {
+					bool dir;
+					if (controlstar.number > rightclickstar.number) {
+						dir = 1;
+					} else {
+						dir = 0;
+					}
+					Parameterofship aship{ controlstar.number, rightclickstar.number, 1, 0, dir, 0.4, pow(10,11), 0, 0,rightclickplanet.number };
+					shipwaittotakeof.push_back(aship);
+					sendship._bPressState = 0;
+				}
+				if (sendship._bMouseOnButton) {
+					hovermessage.ProcessEvent(convertChar8ArrayToString(u8"向敌方或未被占领星发射飞船。"), height / 60.0, width, height);
+					hovermessage.Draw(renderer, height / 60.0);
+				}
+				sendship.DrawButtonWithoutRect_grey(renderer);
+				sendship.ProcessEvent(0);
+
+			}
+
+
 		}
-		TTF_CloseFont(font);
+
+	} else {
+		scroll_y = 0;
+		targetscroll_y = 0;
 	}
-	lasttargetname = targetname;
+	lastrightname = rightclickstar.number;
 }
 
 void StarMap::draw_time(double atime) {
 	std::string timemessage = formatTime(atime);
-	SDL_Color text_color = { 255, 255, 255, 255 };
-	TTF_Font* font = TTF_OpenFont("Assets/Fonts/FileDeletion.ttf", height / 32.0);
-	SDL_Surface* surface = TTF_RenderText_Blended(font, timemessage.c_str(), text_color);//函数未定义
-	SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-	int text_width = surface->w;//单行字尺寸
-	int text_height = surface->h;
-	SDL_FreeSurface(surface);
-
-	SDL_Rect text_rect = { width * 0.5 - 0.5 * text_width,0, text_width, text_height };
-	SDL_RenderCopy(renderer, texture, nullptr, &text_rect);
-	SDL_DestroyTexture(texture);
-
-	TTF_CloseFont(font);
+	showtimeingame.Draw(renderer, timemessage, height / 32.0, width, height, 0.5, 0, "Assets/Fonts/FileDeletion.ttf");
 }
 
 void StarMap::cleanup() {
@@ -1787,6 +2239,10 @@ void StarMap::cleanup() {
 
 	timeingame = 0;
 	timerate = 1;
+	month = 0;
+	lastmonth = 0;
+
+	mousestorey = 0;
 
 	cenposcam = Vec3(0, 0, 0);//对应11111
 	reposcam = Vec3(0, 0, 0);
@@ -1794,7 +2250,6 @@ void StarMap::cleanup() {
 	vecx = Vec3(0, 0, 0);
 	vecy = Vec3(0, 0, 0);
 	vecz = Vec3(0, 0, 0);
-	target = Vec3(0, 0, 0);
 	circen = Vec3(0, 0, 0);
 
 	offset_x = 0;
@@ -1808,12 +2263,18 @@ void StarMap::cleanup() {
 	r = 20;
 	rtarget = 20;//确定
 
-	targetname = -1;
-	lasttargetname = -1;
-	targetcolor = { 0, 0, 0, 255 };
-	targetcloud = 0;
+
+	zvectheta = 0;
+	zvecphi = 0;
+	cirtheta = 0;
+	cirphi = 0;
+
+	lastrightname = -1;
 	totar = false;
 	text = "";//确定
+	toplanet = false;
+	onplanet = false;
+	followplanet = -1;
 
 	scroll_y = 0;
 	targetscroll_y = 0;
@@ -1837,6 +2298,7 @@ void StarMap::cleanup() {
 
 	showcircle = 0;
 	showvertical = 0;
+	showorbit = 1;
 	/* for (auto& texture : tieimg) {
 		 SDL_DestroyTexture(texture);
 	 }
